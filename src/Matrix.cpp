@@ -30,11 +30,11 @@ Matrix::Matrix(size_t nrow, size_t mcol)
 
 
 double Matrix::operator()(size_t i, size_t j) const {
-    return data_[mat_idx_to_array_(i, j)]
+    return data_[mat_idx_to_array_(i, j)];
 }
 
 double& Matrix::operator()(size_t i, size_t j) {
-    return data_[mat_idx_to_array_(i, j)]
+    return data_[mat_idx_to_array_(i, j)];
 }
 
 std::array<size_t,2> Matrix::dims() {
@@ -46,9 +46,7 @@ size_t Matrix::mat_idx_to_array_(size_t i, size_t j) {
     if (i >= nrow_ || j >= mcol_)
         throw std::runtime_error("Indices must be postive integers or zero.");
 
-    array_idx = i*mcol_ + j;
-
-    return array_idx
+    return i*mcol_ + j;
 }
 
 

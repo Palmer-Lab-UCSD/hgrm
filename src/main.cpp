@@ -73,18 +73,18 @@ int main(int argc, char* argv[])
         for (int i=0; i < vcf_data.n_samples(); i++) {
             first_moment(k, i) =  first_moment(k,i) / m_markers;
 
-            covariance[i, i] += (second_moment[k](i,i)
+            covariance(i, i) += (second_moment[k](i,i)
                                     - first_moment(k, i)^2) / (m_markers-1);
 
-            std::cout << covariance[i,i] << std::endl;
+            std::cout << covariance(i,i) << std::endl;
 
             for(int j=i+1; j < vcf_data.n_samples(); j++) {
-                covariance[i, j] += (second_moment[k](i, j)
+                covariance(i, j) += (second_moment[k](i, j)
                                     - first_moment(k,i)*first_moment(k,j)) / (m_markers-1);
 
-                covariance[j, i] = covariance[i, j];
+                covariance(j, i) = covariance(i, j);
 
-                std::cout << ", " << covariance[j,i];
+                std::cout << ", " << covariance(j,i);
             }
             std::cout << std::endl;
         }
