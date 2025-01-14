@@ -14,6 +14,13 @@
 #include "HaplotypeVcfParser.h"
 
 
+// Default constructor
+HaplotypeDataRecord::HaplotypeDataRecord()
+    : chrom_(""), pos_(-1), id_(""),
+    ref_('\0'), alt_('\0'), qual_(""), filter_(""),
+    info_(""), format_(""), samples_(nullptr) {};
+
+
 // Constructor
 HaplotypeDataRecord::HaplotypeDataRecord(const std::string& vcf_line, size_t n_cols)
     : chrom_(""), pos_(-1), id_(""),
@@ -53,6 +60,18 @@ HaplotypeDataRecord& HaplotypeDataRecord::operator=(const HaplotypeDataRecord& o
 
     return *this;
 }
+
+
+// access elements
+const std::string& HaplotypeDataRecord::chrom() const { return chrom_; };
+const long HaplotypeDataRecord::pos() const { return pos_; };
+const std::string& HaplotypeDataRecord::id() const { return id_; };
+const char HaplotypeDataRecord::ref() const { return ref_; };
+const char HaplotypeDataRecord::alt() const { return alt_; };
+const std::string& HaplotypeDataRecord::qual() const { return qual_; };
+const std::string& HaplotypeDataRecord::filter() const { return filter_; };
+const std::string& HaplotypeDataRecord::info() const { return info_; };
+const std::string& HaplotypeDataRecord::format() const { return format_; };
 
 
 void HaplotypeDataRecord::parse_vcf_line(const std::string& vcf_line, size_t n_cols) {

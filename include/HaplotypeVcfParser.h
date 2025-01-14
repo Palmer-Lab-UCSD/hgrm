@@ -45,7 +45,7 @@ class HaplotypeDataRecord
 {
 public:
 
-    HaplotypeDataRecord()=delete;
+    HaplotypeDataRecord();
     HaplotypeDataRecord(const std::string& vcf_line,
                         size_t n_cols);                 // constructor
     HaplotypeDataRecord(const HaplotypeDataRecord&);    // copy constructor
@@ -53,6 +53,15 @@ public:
     HaplotypeDataRecord& operator=(const HaplotypeDataRecord&);  //copy assignment
     //HaplotypeDataRecord& operator=(HaplotypeDataRecord&&)       //move assignment
 
+    const std::string& chrom() const;
+    const long pos() const;
+    const std::string& id() const;
+    const char ref() const;
+    const char alt() const;
+    const std::string& qual() const;
+    const std::string& filter() const;
+    const std::string& info() const;
+    const std::string& format() const;
 
     void parse_vcf_line(const std::string&, size_t n_cols);
     double operator()(size_t, size_t) const;

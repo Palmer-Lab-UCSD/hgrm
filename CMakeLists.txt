@@ -13,7 +13,7 @@ project(hgrm VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -v")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
 
 # Begin Claude recommendation
 # include_directories(${PROJECT_SOURCE_DIR}/include)
@@ -55,12 +55,12 @@ target_link_libraries(
 )
 
 add_executable(
-    test_data_record
+    test_haplotype_data_record
     tests/test_haplotype_data_record.cpp
 )
 
 target_link_libraries(
-    test_data_record
+    test_haplotype_data_record
     PRIVATE
     matrix_lib
     parse_lib
@@ -70,3 +70,5 @@ target_link_libraries(
 
 include(GoogleTest)
 gtest_discover_tests(test_matrix)
+gtest_discover_tests(test_haplotype_data_record)
+
