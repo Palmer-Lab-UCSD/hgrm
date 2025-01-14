@@ -13,13 +13,20 @@
 //
 
 #include <array>
+#include <utility>
 
 class Matrix
 {
 public:
-    Matrix(size_t, size_t);
+    Matrix(size_t, size_t);                         // constructorconstructor
+    Matrix(const Matrix&);                          // copy constructor
+    Matrix(Matrix&&);                               // move constructor
+    Matrix& operator=(const Matrix&)=delete;        // copy assignment
+    Matrix& operator=(Matrix&&)=delete;             // move assignment
+                                            
+
     double operator()(size_t, size_t) const;
-    void operator()(size_t, size_t);
+    double& operator()(size_t, size_t);
 
     size_t size() const;
     std::array<size_t,2> dims() const;
@@ -28,5 +35,5 @@ private:
     const size_t nrow_;
     const size_t mcol_;
     std::unique_ptr<double[]> data_;
-    size_t mat_idx_to_array_(size_t, size_t);
-}
+    size_t mat_idx_to_array_(size_t, size_t) const;
+};
