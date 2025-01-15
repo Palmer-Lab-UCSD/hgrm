@@ -7,6 +7,13 @@
 // Input argument
 //    filename: vcf with haplotpye
 //
+// This program performs a single-pass computation of the 
+// haplotype based genomic relationship matrix.  The approach
+// is well defined for the covariance, however under my definition
+// of the haplotype based covariance I had to derive the recursion
+// relations myself.
+//
+//
 //
 // Acknowledgment
 //
@@ -35,59 +42,50 @@ int main(int argc, char* argv[])
     Matrix covariance { vcf_data.n_samples(), vcf_data.n_samples() };
 
     Matrix first_moment { vcf_data.k_founders(), vcf_data.n_samples() };
-    std::array<Matrix, vcf_data.k_founders()> second_moment;
-
-    for(int k = 0; k < vcf_data.k_founders(); k++)
-        second_moment[k] { vcf_data.n_samples(), vcf_data.n_samples() };
-
+    Matrix delta { vcf_data.k_founders(), vcf_data.n_samples() };
 
 
     // instantiate record object
     HaplotypeDataRecord record {};
 
     // analyze each line, i.e. position, in the VCF
-    size_t m_markers { 0 };
+    size_t m_markers { 1 };
 
     while(vcf_data.get_record(record)) {
 
         // for each founder, compute first and second moments
-        for (int k = 0; k < vcf_data.k_founders(); k++)
+        for (int k = 0; k < vcf_data.k_founders(); k++) {
+
+            
+            if (m_markers == 1) {
+                for (int i = 0; i < vcf_data.n_samples(); i++) {
+                    first_moment(k, i) = record(k, i);
+                    delta(k, i) = 0;
+                } 
+                continue;
+            }
+
 
             for (int i = 0; i < vcf_data.n_samples(); i++) {
 
-                first_moment(k, i) += record(k, i);
-                second_moment[k](i, i) += record(k, i) * record(k,i);
+                delta(k,i) = record(k, i) - first_moment(k, i);
 
-                for (int j = i+1; j < vcf_data.k_founders(); j++) {
-                    second_moment[k](i, j) += record(k, i) * record(k, j);
+                for (int j = i; j < vcf_data.n_samples(); j++) {
+
+                    delta(k,j) = record(k, j) - first_moment(k, j);
+
+                    covariance(i, j) = (m_markers-2) * covariance(i, j) / (m_markers-1) 
+                                            + delta[k,i]*delta[k,j]/m_markers;
+
+                    if (i != j)
+                        convariance(j, i) = covariance(i,j);
                 }
+
+                first_moment(k, i) += delta(k, i) / m_markers;
             }
+        }
 
         m_markers++;
-    }
-
-    // Use the first and second moments to compute the unbiased covariance 
-
-    for (int k = 0; k < vcf_data.k_founders(); k++) {
-
-        for (int i=0; i < vcf_data.n_samples(); i++) {
-            first_moment(k, i) =  first_moment(k,i) / m_markers;
-
-            covariance(i, i) += (second_moment[k](i,i)
-                                    - first_moment(k, i)^2) / (m_markers-1);
-
-            std::cout << covariance(i,i) << std::endl;
-
-            for(int j=i+1; j < vcf_data.n_samples(); j++) {
-                covariance(i, j) += (second_moment[k](i, j)
-                                    - first_moment(k,i)*first_moment(k,j)) / (m_markers-1);
-
-                covariance(j, i) = covariance(i, j);
-
-                std::cout << ", " << covariance(j,i);
-            }
-            std::cout << std::endl;
-        }
     }
 
 

@@ -1,0 +1,118 @@
+\documentclass{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+
+\newtheorem{definition}{Definition}
+\newtheorem{result}{Result}
+\newcommand{\set}[1]{\{#1\}}
+
+\newcommand{\defref}[1]{Def~\ref{#1}}
+
+
+\newcommand{\hapP}[1]{x_{#1}^{(p)}}
+\newcommand{\hap}[1]{x_{#1}}
+\newcommand{\bhapP}[1]{\bar{x}_{#1}^{(p)}}
+
+
+\newcommand{\deltaP}[1]{\delta_{#1}^{(p)}}
+
+
+\newcommand{\hcovarianceM}[1]{\text{cov}^{(#1)}}
+\newcommand{\hcovM}[1]{C^{(#1)}}
+
+\author{Robert Vogel}
+\title{A recursion relaion for online coviarnce
+of haplotype counts}
+\date{2025-01-15}
+
+\begin{document}
+
+\maketitle
+
+
+In this short write-up I document a recursion relation for single-pass,
+or online, estimation of the unbiased covariance of haplotype counts.  This is
+necessary because our genetic data sets are just too large to load into memory 
+and for inefficient algoritms.  Indeed,
+such a relationship is well established for the covariance, \cite{wikiOnlineCov},
+however I was unsure how this procedure would extend to my definition of
+haplotype count covariance.  In what follows I define the haplotype count
+covariance, hcov for short, and then show the recursion relation that I'll
+implement in C++.
+
+I begin by introducing the quantities of interest.  Denote the expected number of
+haplotype $p$ copies, at locus $m$, and for sample $i$ as $\hapP{mi} \in [0,2]$.
+Importantly, the $\hapP{mi}$ is a real number as it represents an \emph{expected}
+copy number, and not the actual copy number.  The number of distinct haplotypes are
+the number of $K$ founder strains in our heterogenous stock rat colony making 
+$p\in\set{1,2,\dots,K}$.  A locus $m\in\set{1,2,\dots,M}$ is any integer from 1 to
+the $M$ total number of loci.  Lastly, we assume that the population consists of 
+$N$ animals, i.e. samples.
+
+As we are interested in the single-pass computation of the covariance, we must
+first define the haplotype mean and covariance statistics.
+
+\begin{definition}\label{def:hmean}
+    The mean of expected haplotype counts for haplotype $p$ is
+    %
+    \begin{equation}\nonumber
+        \bhapP{Mi} = \frac{1}{M} \sum_{m=1}^M \hapP{mi}.
+    \end{equation}
+    %
+\end{definition}
+
+Next the unbiased covariance over markers and haplotypes.
+
+\begin{definition}\label{def:hcov}
+    The unbiased covariance of expected haplotype counts over $p$ distinct haplotypes
+    and $M$ markers is defined as
+    %
+    \begin{equation}\nonumber
+        \hcovarianceM{M}(\hap{i},\hap{j}) = \frac{1}{M-1}\sum_{p=1}^K\sum_{m=1}^M
+            \left(\hapP{mi} - \bhapP{Mi}\right)
+            \left(\hapP{mj} - \bhapP{Mj}\right)
+    \end{equation}
+    %
+    for which we will use $\hcovM{M}_{ij}$ as shorthand.
+\end{definition}
+
+The aim for this analysis is to write the mean \defref{def:hmean}
+and covariance \defref{def:hcov} as a recursion relation.  That is, 
+suppose there are a total of $M'$ loci in which we want an estimate
+of the mean and covariance.  The statistics will be computed by a single
+\texttt{for} loop over the total number of markers $M'$.  Meaning that 
+for any iteration $1\leq M\leq M'$ we must figure out how to update the mean
+and covariance estimates from the previous $M-1$ observations.  That is
+we recursively update our estimates of the mean and covariance.  When we have
+updated our mean and covariance estimates for all $M'$ markers, the \texttt{for}
+loop will terminate and we'll have our desired estimates all without 
+loading the entire data set at one time.
+
+In presenting the recursion, let us define the quantity $\deltaP{Mi}$
+%
+\begin{definition}\label{def:delta}
+    The value $\deltaP{Mi}$ is a quantity for updating the mean and covariances
+    from iteration $M-1$ to iteration $M$ of sample $i$ and is defined as follows
+    %
+    \begin{equation}\nonumber
+        \deltaP{Mi} = \hapP{Mi} - \bhapP{(M-1)i}.
+    \end{equation}
+\end{definition}
+
+\begin{result}\label{res:mean}
+    \begin{equation}\nonumber
+        \bhapP{Mi} = \bhapP{(M-1)i} + \frac{\deltaP{Mi}}{M}
+    \end{equation}
+\end{result}
+
+\begin{result}\label{res:cov}
+    \begin{equation}\nonumber
+        \hcovM{M}_{ij} = \frac{M-2}{M-1}\hcovM{M-1}_{ij} 
+            + \frac{1}{M}\sum_{p=1}^K\deltaP{Mi}\deltaP{Mj}
+    \end{equation}
+\end{result}
+
+\bibliography{refs}
+\bibliographystyle{plain}
+
+\end{document}
