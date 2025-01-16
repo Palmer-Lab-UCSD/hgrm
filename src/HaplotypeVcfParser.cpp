@@ -16,26 +16,32 @@
 #include "HaplotypeVcfParser.h"
 
 HaplotypeVcfParser::HaplotypeVcfParser(char* filename)
-    : fname{ filename }, file_stream_{ filename } {
+    : fname_(filename), file_stream_(filename), 
+        n_cols_(0), n_samples_(0), n_meta_lines_(0), 
+        meta_(nullptr), vcf_standard_colnames_(nullptr), sample_names_(nullptr) {
 
-        if (file_stream_.bad())
-            throw std::runtime_error("File Access error");
-        else if (file_stream_.eof())
-            throw std::runtime_error("File is empty");
+    if (file_stream_.bad())
+        throw std::runtime_error("File Access error");
+    else if (file_stream_.eof())
+        throw std::runtime_error("File is empty");
 
-        set_vcf_params_();
-    };
+    set_vcf_params_();
+};
+
 
 HaplotypeVcfParser::HaplotypeVcfParser(std::string filename)
-    : fname{ filename }, file_stream_{ filename } {
+    : fname_(filename), file_stream_(filename), 
+        n_cols_(0), n_samples_(0), n_meta_lines_(0), 
+        meta_(nullptr), vcf_standard_colnames_(nullptr), sample_names_(nullptr) {
 
-        if (file_stream_.bad())
-            throw std::runtime_error("File Access error");
-        else if (file_stream_.eof())
-            throw std::runtime_error("File is empty");
+    if (file_stream_.bad())
+        throw std::runtime_error("File Access error");
+    else if (file_stream_.eof())
+        throw std::runtime_error("File is empty");
 
-        set_vcf_params_();
-    };
+    set_vcf_params_();
+};
+
 
 HaplotypeVcfParser::~HaplotypeVcfParser() { file_stream_.close(); }
 
@@ -53,7 +59,7 @@ void HaplotypeVcfParser::load_meta_() {
     std::string tmp {};
 
     // count meta lines
-    n_meta_lines_ { 0 };
+    n_meta_lines_ = 0;
     while ( std::getline(file_stream_, tmp) ) {
 
         // break at VCF header
@@ -67,7 +73,7 @@ void HaplotypeVcfParser::load_meta_() {
         throw std::runtime_error("File read error");
 
     // instantiate meta array
-    meta_ std::make_unique<std::string[]>(n_meta_lines_);
+    meta_ = std::make_unique<std::string[]>(n_meta_lines_);
 
 
     // load meta lines
@@ -77,7 +83,7 @@ void HaplotypeVcfParser::load_meta_() {
         if (!std::getline(file_stream_, tmp) && !file_stream_.eof())
             throw std::runtime_error("File read error");
 
-        meta_[i] { tmp };
+        meta_[i]=tmp;
     }
 }
 
@@ -101,77 +107,78 @@ void HaplotypeVcfParser::load_header_() {
 
     // if there is no header
     if (s[0] != META_PREFIX) {
-        n_cols_ { 0 };
-        n_samples_ { 0 };
-        vcf_standard_colnames_ { nullptr };
-        sample_names_ { nullptr };
+        n_cols_ = 0;
+        n_samples_ = 0;
+        vcf_standard_colnames_ = nullptr;
+        sample_names_ = nullptr;
 
-        return void;
+        return;
     }
 
     if (std::isblank(s[0]))
-        throw sys::runtime_error("First element of VCF line must not be blank.");
+        throw std::runtime_error("First element of VCF line must not be blank.");
 
     // analyze the mandatory vcf columns, not I require format to be
     // column number 9, then assume that column 10 on are samples
-    ncols_ { 0 };
-    vcf_standard_colnames_ { std::make_unique<std::string[]>(NUM_VCF_FIELDS) };
+    n_cols_ = 0;
+    vcf_standard_colnames_ = std::make_unique<std::string[]>(NUM_VCF_FIELDS);
     size_t i { 0 };
-    for (;i < s.size() && ncols_ < VCF_FIELD_NAMES.size()
+    for (;i < s.size() && n_cols_ < NUM_VCF_FIELDS
             && load_next_field_to_buffer_(s, i); i++) {
 
-        vcf_standard_colnames_[ncol_] = buffer_;
+        vcf_standard_colnames_[n_cols_] = buffer_.data();
 
-        if (vcf_standard_colnames_[ncol_] != VCF_COLNAMES[ncol_])
+        if (vcf_standard_colnames_[n_cols_] != VCF_FIELD_NAMES[n_cols_])
             throw std::runtime_error("File does not adhere to VCF standard.");
 
-        ncols_++;
+        n_cols_++;
     }
 
-    if (ncols_ != NUM_VCF_FIELDS)
+    if (n_cols_ != NUM_VCF_FIELDS)
         throw std::runtime_error("File does not adhere to VCF standard.");
     
-    size_t curr_file_position_ { file_stream_.tellg(std::ios_bas.cur) };
+    size_t curr_file_position_ { static_cast<size_t>(file_stream_.tellg()) };
     size_t j { i };
     
     for (;j < s.size(); j++){
-        load_next_field_(s, j);
-        ncols_++;
+        load_next_field_to_buffer_(s, j);
+        n_cols_++;
     }
 
-    n_samples_ = ncols_ - NUM_VCF_FIELDS;
+    n_samples_ = n_cols_ - NUM_VCF_FIELDS;
 
-    sample_names_ { std::make_unique<std::string[]>(n_samples_) };
+    sample_names_ = std::make_unique<std::string[]>(n_samples_);
     size_t samp_count { 0 };
     pos_(curr_file_position_);
 
-    for (; i < s.size() && load_next_field_(s, i); i++) {
-        sample_names_[samp_count] = buffer_;
+    for (; i < s.size() && load_next_field_to_buffer_(s, i); i++) {
+        sample_names_[samp_count] = buffer_.data();
         samp_count++;
     }
 
     if (samp_count != n_samples_)
         throw std::runtime_error("Number of samples read do not agree");
 
-
 }
 
-bool HaplotypeVcfParser::load_next_field_(const std::string& s, size_t& i) {
+
+bool HaplotypeVcfParser::load_next_field_to_buffer_(const std::string& s, size_t& i) {
 
     buffer_idx_ = 0;
 
     for (;i < s.size();i++) {
 
-        if (i > 0 && std::isblank(s[i]) && !std::isblank(s[i-1])) {
+        if (i > 0 && std::isspace(s[i]) && !std::isspace(s[i-1])) {
             buffer_[buffer_idx_] = '\0';
-            continue;
+            break;
         }
 
-        if (std::isblank(s[i]))
+        // more than one space in a row
+        if (std::isspace(s[i]))
             continue;
 
-        if (!std::isblank(s[i]))
-            break;
+        //if (!std::isspace(s[i]))
+        //    break;
 
         buffer_[buffer_idx_++] = s[i];
     }
@@ -185,12 +192,12 @@ bool HaplotypeVcfParser::load_next_field_(const std::string& s, size_t& i) {
 
 void HaplotypeVcfParser::set_vcf_params_()
 {
-    void load_meta_();
-    void load_header_();
+    load_meta_();
+    load_header_();
 }
 
 
-bool HaplotypeVcfParser::get_record(HaplotypeDataRecord& record) {
+bool HaplotypeVcfParser::load_record(HaplotypeDataRecord& record) {
     if (file_stream_.eof())
         return false;
 

@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
     // analyze each line, i.e. position, in the VCF
     size_t m_markers { 1 };
 
-    while(vcf_data.get_record(record)) {
+    while(vcf_data.load_record(record)) {
 
         // for each founder, compute first and second moments
         for (int k = 0; k < vcf_data.k_founders(); k++) {
@@ -75,10 +75,10 @@ int main(int argc, char* argv[])
                     delta(k,j) = record(k, j) - first_moment(k, j);
 
                     covariance(i, j) = (m_markers-2) * covariance(i, j) / (m_markers-1) 
-                                            + delta[k,i]*delta[k,j]/m_markers;
+                                            + delta(k,i)*delta(k,j)/m_markers;
 
                     if (i != j)
-                        convariance(j, i) = covariance(i,j);
+                        covariance(j, i) = covariance(i,j);
                 }
 
                 first_moment(k, i) += delta(k, i) / m_markers;
@@ -89,5 +89,13 @@ int main(int argc, char* argv[])
     }
 
 
+    for (int i = 0; i < vcf_data.n_samples(); i++) {
+
+        std::cout << std::endl;
+
+        for (int j = 0; j < vcf_data.n_samples(); j++)
+            std::cout << covariance(i, j) << ", " << std::endl;
+
+    }
     return 0;
 }

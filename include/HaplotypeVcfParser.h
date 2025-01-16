@@ -71,7 +71,7 @@ public:
 
 private:
     static constexpr size_t buffer_size_ { 1000 };
-    size_t buffer_idx_ { 0 };
+    int buffer_idx_ { 0 };
     std::array<char,buffer_size_> buffer_;
 
     static constexpr size_t hap_buffer_size_ { 100 };
@@ -98,21 +98,25 @@ class HaplotypeVcfParser
 {
 public:
 
-    HaplotypeVcfParser(char* filename);
-    HaplotypeVcfParser(std::string filename);
-    ~HaplotypeVcfParser(); 
+    HaplotypeVcfParser()=delete;                                // default constructor
+    HaplotypeVcfParser(char* filename);                         // constructor
+    HaplotypeVcfParser(std::string filename);                   // constructor
+    HaplotypeVcfParser(const HaplotypeVcfParser&)=delete;       // copy constructor
+    HaplotypeVcfParser(const HaplotypeVcfParser&&)=delete;       // move constructor
+    HaplotypeVcfParser& operator=(const HaplotypeVcfParser&)=delete;    // copy assignment
+    ~HaplotypeVcfParser();                                      // descructor
 
-    bool get_record(HaplotypeDataRecord&);
+    bool load_record(HaplotypeDataRecord&);
     size_t n_samples() { return n_samples_; };
 
 private:
     const std::string fname_;
-    const size_t n_cols_;
-    const size_t n_samples_;
-    const size_t n_meta_lines_;
-    const std::unique_ptr<std::string[]> meta_;
-    const std::unique_ptr<std::string[]> vcf_standard_colnames_;
-    const std::unique_ptr<std::string[]> sample_names_;
+    size_t n_cols_;
+    size_t n_samples_;
+    size_t n_meta_lines_;
+    std::unique_ptr<std::string[]> meta_;
+    std::unique_ptr<std::string[]> vcf_standard_colnames_;
+    std::unique_ptr<std::string[]> sample_names_;
 
     std::ifstream file_stream_;
 

@@ -182,6 +182,7 @@ void HaplotypeDataRecord::parse_vcf_line(const std::string& vcf_line, size_t n_c
 
 
             if (field_idx > 9 && samples_) {
+                std::cout << sample_idx << " of " << n_samples << std::endl;
 
                 if (sample_idx < 0 || sample_idx >= n_samples)
                     throw std::runtime_error("Incorrect indexing");
@@ -234,10 +235,10 @@ void HaplotypeDataRecord::parse_vcf_line(const std::string& vcf_line, size_t n_c
             continue;
         }
 
-        if (i > 0 && std::isblank(vcf_line[i])
-                        && std::isblank(vcf_line[i-1]))
+        if (i > 0 && std::isspace(vcf_line[i])
+                        && std::isspace(vcf_line[i-1]))
             continue;
-        else if (i == 0 && std::isblank(vcf_line[i]))
+        else if (i == 0 && std::isspace(vcf_line[i]))
             throw std::runtime_error("First element of VCF line must not be blank.");
 
         if (buffer_idx_ >= buffer_size_)

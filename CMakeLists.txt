@@ -35,8 +35,9 @@ find_package(GTest REQUIRED)
 add_library(matrix_lib src/Matrix.cpp)
 target_include_directories(matrix_lib PUBLIC include)
 
-add_library(parse_lib src/HaplotypeDataRecord.cpp)# src/HaplotypeVcfParser.cpp)
+add_library(parse_lib src/HaplotypeDataRecord.cpp src/HaplotypeVcfParser.cpp)
 target_include_directories(parse_lib PUBLIC include)
+
 
 
 # Testing configuration
@@ -59,6 +60,11 @@ add_executable(
     tests/test_haplotype_data_record.cpp
 )
 
+add_executable(
+    test_haplotype_vcf_parser
+    tests/test_haplotype_vcf_parser.cpp
+)
+
 target_link_libraries(
     test_haplotype_data_record
     PRIVATE
@@ -68,7 +74,30 @@ target_link_libraries(
 )
 
 
+target_link_libraries(
+    test_haplotype_vcf_parser
+    PRIVATE
+    matrix_lib
+    parse_lib
+    GTest::gtest_main
+)
+
+
+# add_executable(
+#     hgrm
+#     src/main.cpp
+# )
+# 
+# target_link_libraries(
+#     hgrm
+#     PRIVATE
+#     matrix_lib
+#     parse_lib
+# )
+
+
 include(GoogleTest)
 gtest_discover_tests(test_matrix)
 gtest_discover_tests(test_haplotype_data_record)
+gtest_discover_tests(test_haplotype_vcf_parser)
 
