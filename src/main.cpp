@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
 
 
     // instantiate record object
-    HaplotypeDataRecord record {};
+    HaplotypeDataRecord record { vcf_data.k_founders(), vcf_data.n_samples() };
 
     // analyze each line, i.e. position, in the VCF
     size_t m_markers { 1 };
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
         std::cout << std::endl;
 
         for (int j = 0; j < vcf_data.n_samples(); j++)
-            std::cout << covariance(i, j) << ", " << std::endl;
+            std::cout << covariance(i, j) << ", ";
 
     }
     return 0;

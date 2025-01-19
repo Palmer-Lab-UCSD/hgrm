@@ -11,6 +11,8 @@
 // (Jan 2025), with minor recommendations incorporated.
 //
 //
+#ifndef HEADER_MATRIX_H
+#define HEADER_MATRIX_H
 
 #include <array>
 #include <utility>
@@ -37,3 +39,5 @@ private:
     std::unique_ptr<double[]> data_;
     size_t mat_idx_to_array_(size_t, size_t) const;
 };
+
+#endif
