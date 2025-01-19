@@ -16,12 +16,12 @@ founder $p$ and sample $i$.  The algorithm we will use to compute the
 covariance is an online, or single-pass,
 algorithm [3] modified for our expected haplotype count encoding.  Let 
 $m$ indicated we are computing the update of the $m^{th}$ marker given
-compuations of the mean $\bar{x}_{(m-1)pi}$ and covariance between 
-sampels $i$ and $j$, $C_{ij}^{(m-1)}.  The recursive mean and covariance update
+compuations of the mean \$\bar{x}\_{(m-1)pi}\$ and covariance between 
+sampels \$i\$ and \$j\$, and \$C\_{ij}^{(m-1)}\$.  The recursive mean and covariance update
 equations are as follows
 
 $$
-\bar{x}_{mpi} = \bar{x}_{(m-1)pi} + \frac{\delta_{mpi}}{m}
+\bar{x}\_{mpi} = \bar{x}\_{(m-1)pi} + \frac{\delta_{mpi}}{m}
 $$
 
 where
@@ -33,7 +33,7 @@ $$
 The update to the covariance is
 
 $$
-C_{ij}^{(m)} = \frac{M-2}{M-1} \; C_{ij}^{(M-1)} 
+C_{ij}^{(m)} = \frac{M-2}{M-1} \\; C_{ij}^{(M-1)} 
     + \frac{1}{M}\sum_{p=1}^K \delta_{Mpi}\delta_{Mpj}.
 $$
 
