@@ -16,11 +16,11 @@
 
 
 // Default constructor
-HaplotypeDataRecord::HaplotypeDataRecord(size_t k_founders, size_t n_samples) 
-    : k_founders_(k_founders),
-        n_samples_(n_samples),
+HaplotypeDataRecord::HaplotypeDataRecord(size_t n_samples, size_t k_founders) 
+    : n_samples_(n_samples),
+        k_founders_(k_founders),
         samples_(n_samples_ > 0 && k_founders_ > 0 
-                    ? std::make_unique<Matrix>(k_founders_, n_samples_) : nullptr) {
+                    ? std::make_unique<Matrix>(n_samples_, k_founders_) : nullptr) {
 
         if (n_samples_ <= 0 || k_founders_ <= 0)
             throw std::runtime_error("Data must have more than zero samples and founders");
@@ -114,7 +114,7 @@ void HaplotypeDataRecord::parse_vcf_line(const char* vcf_line) {
 
             // decompose haplotype counts to respective founders
             for (founder_idx = 0; hap_parse_.next_field(); founder_idx++)
-                (*samples_)(founder_idx, sample_idx) = std::atof(hap_parse_.data());
+                (*samples_)(sample_idx, founder_idx) = std::atof(hap_parse_.data());
 
 
             if (founder_idx != k_founders_)

@@ -41,12 +41,12 @@ int main(int argc, char* argv[])
 
     Matrix covariance { vcf_data.n_samples(), vcf_data.n_samples() };
 
-    Matrix first_moment { vcf_data.k_founders(), vcf_data.n_samples() };
-    Matrix delta { vcf_data.k_founders(), vcf_data.n_samples() };
+    Matrix first_moment { vcf_data.n_samples(), vcf_data.k_founders() };
+    Matrix delta { vcf_data.n_samples(), vcf_data.k_founders() };
 
 
     // instantiate record object
-    HaplotypeDataRecord record { vcf_data.k_founders(), vcf_data.n_samples() };
+    HaplotypeDataRecord record { vcf_data.n_samples(), vcf_data.k_founders() };
 
     // analyze each line, i.e. position, in the VCF
     size_t m_markers { 1 };
@@ -54,34 +54,34 @@ int main(int argc, char* argv[])
     while(vcf_data.load_record(record)) {
 
         // for each founder, compute first and second moments
-        for (int k = 0; k < vcf_data.k_founders(); k++) {
-
-            
-            if (m_markers == 1) {
-                for (int i = 0; i < vcf_data.n_samples(); i++) {
-                    first_moment(k, i) = record(k, i);
-                    delta(k, i) = 0;
+        
+        if (m_markers == 1) {
+            for (int i = 0; i < vcf_data.n_samples(); i++) 
+                for (int k = 0; k < vcf_data.k_founders(); k++) {
+                    first_moment(i, k) = record(i, k);
+                    delta(i, k) = 0;
                 } 
-                continue;
-            }
-
+            m_markers++;
+            continue;
+        } else {
 
             for (int i = 0; i < vcf_data.n_samples(); i++) {
-
-                delta(k,i) = record(k, i) - first_moment(k, i);
-
-                for (int j = i; j < vcf_data.n_samples(); j++) {
-
-                    delta(k,j) = record(k, j) - first_moment(k, j);
-
-                    covariance(i, j) = (m_markers-2) * covariance(i, j) / (m_markers-1) 
-                                            + delta(k,i)*delta(k,j)/m_markers;
-
-                    if (i != j)
-                        covariance(j, i) = covariance(i,j);
+                for (int k = 0; k < vcf_data.k_founders(); k++) {
+                    delta(i, k) = record(i, k) - first_moment(i, k);
+                    first_moment(i, k) += delta(i, k) / m_markers;
                 }
+            }
+        }
 
-                first_moment(k, i) += delta(k, i) / m_markers;
+
+        for (int i = 0; i < vcf_data.n_samples(); i++) {
+            for (int j = i; j < vcf_data.n_samples(); j++) {
+                for (int k = 0; k < vcf_data.k_founders(); k++)
+                    covariance(i, j) = (m_markers-2)*covariance(i, j) / (m_markers-1) 
+                                        + delta(i,k)*delta(j,k)/m_markers;
+
+                if (i != j)
+                    covariance(j, i) = covariance(i,j);
             }
         }
 

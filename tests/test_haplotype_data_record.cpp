@@ -18,51 +18,51 @@ TEST(TestConstructorAssignment, Constructor) {
 
 
     // Test first record
-    HaplotypeDataRecord hap_record { num_founders, num_samps };
+    HaplotypeDataRecord hap_record { num_samps, num_founders };
     
     std::array<size_t, 2> dims { hap_record.dims() };
     
-    EXPECT_EQ(dims[0], num_founders);
-    EXPECT_EQ(dims[1], num_samps);
+    EXPECT_EQ(dims[0], num_samps);
+    EXPECT_EQ(dims[1], num_founders);
 
     hap_record.parse_vcf_line(vcf_record);
     
     EXPECT_EQ(hap_record(0,0), 1);
-    EXPECT_EQ(hap_record(0,1), 0);
-    EXPECT_EQ(hap_record(0,2), 0);
-    EXPECT_EQ(hap_record(0,3), 2);
-    
     EXPECT_EQ(hap_record(1,0), 0);
+    EXPECT_EQ(hap_record(2,0), 0);
+    EXPECT_EQ(hap_record(3,0), 2);
+    
+    EXPECT_EQ(hap_record(0,1), 0);
     EXPECT_EQ(hap_record(1,1), 2);
-    EXPECT_EQ(hap_record(1,2), 0);
-    EXPECT_EQ(hap_record(1,3), 0);
-
-    EXPECT_EQ(hap_record(2,0), 1);
     EXPECT_EQ(hap_record(2,1), 0);
+    EXPECT_EQ(hap_record(3,1), 0);
+
+    EXPECT_EQ(hap_record(0,2), 1);
+    EXPECT_EQ(hap_record(1,2), 0);
     EXPECT_EQ(hap_record(2,2), 2);
-    EXPECT_EQ(hap_record(2,3), 0);
+    EXPECT_EQ(hap_record(3,2), 0);
 
     // Test second record
      
     char vcf_record2[] { "chr12 2 . G T Q2 F2 INFO2 GT:AB:HD 0/0:2:1,0,1 0/1:1:0,2,0 1/0:0:0,0,2 0/1:1:0,0,2\n" };
-    HaplotypeDataRecord hap_record2 { num_founders, num_samps };
+    HaplotypeDataRecord hap_record2 { num_samps, num_founders };
 
     hap_record2.parse_vcf_line(vcf_record2);
 
     EXPECT_EQ(hap_record2(0,0), 1);
-    EXPECT_EQ(hap_record2(0,1), 0);
-    EXPECT_EQ(hap_record2(0,2), 0);
-    EXPECT_EQ(hap_record2(0,3), 0);
-    
     EXPECT_EQ(hap_record2(1,0), 0);
+    EXPECT_EQ(hap_record2(2,0), 0);
+    EXPECT_EQ(hap_record2(3,0), 0);
+    
+    EXPECT_EQ(hap_record2(0,1), 0);
     EXPECT_EQ(hap_record2(1,1), 2);
-    EXPECT_EQ(hap_record2(1,2), 0);
-    EXPECT_EQ(hap_record2(1,3), 0);
-
-    EXPECT_EQ(hap_record2(2,0), 1);
     EXPECT_EQ(hap_record2(2,1), 0);
+    EXPECT_EQ(hap_record2(3,1), 0);
+
+    EXPECT_EQ(hap_record2(0,2), 1);
+    EXPECT_EQ(hap_record2(1,2), 0);
     EXPECT_EQ(hap_record2(2,2), 2);
-    EXPECT_EQ(hap_record2(2,3), 2);
+    EXPECT_EQ(hap_record2(3,2), 2);
     
 }
 
