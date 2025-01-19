@@ -13,21 +13,31 @@
 // reviewed by Claude Sonnet, the AI assistant from Anthropic
 // (Jan 2025), with minor recommendations incorporated.
 //
+#ifndef HEADER_HAPLOTYPEVCFPARSER_H
+#define HEADER_HAPLOTYPEVCFPARSER_H
+
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <array>
 #include <cstdlib>
+#include <cstring>
+#include <cstdio>
 #include "Matrix.h"
+#include "utils.h"
 
 
 // samples are separated by white space
 const char HAP_CODE[] { "HD" };
 const char META_PREFIX { '#' };
-const char MEASUREMENT_DELIM { ':' };
-const char HAP_DELIM { ',' };
+const std::string MEASUREMENT_DELIM { ":" };
+const std::string HAP_DELIM { "," };
 const int NUM_VCF_FIELDS { 9 };
-const std::array<std::string, NUM_VCF_FIELDS> VCF_FIELD_NAMES= {
+const std::string SPACE_DELIM { " \t\n\v\f\r" };
+const size_t BUFFER_SIZE { 1000 };
+
+// NOTE: in the future it may be best to test for set membership
+static const char* VCF_FIELD_NAMES[NUM_VCF_FIELDS] {
     "#CHROM",
     "POS",
     "ID",
@@ -45,13 +55,11 @@ class HaplotypeDataRecord
 {
 public:
 
-    HaplotypeDataRecord();
-    HaplotypeDataRecord(const std::string& vcf_line,
-                        size_t n_cols);                 // constructor
-    HaplotypeDataRecord(const HaplotypeDataRecord&);    // copy constructor
-    //HaplotypeDataRecord(HaplotypeDataRecord&&);         // move constructor
-    HaplotypeDataRecord& operator=(const HaplotypeDataRecord&);  //copy assignment
-    //HaplotypeDataRecord& operator=(HaplotypeDataRecord&&)       //move assignment
+    HaplotypeDataRecord()=delete;
+    HaplotypeDataRecord(size_t n_samples, size_t k_founders);
+    HaplotypeDataRecord(const HaplotypeDataRecord&)=delete;
+    HaplotypeDataRecord(HaplotypeDataRecord&&)=delete;
+
 
     const std::string& chrom() const;
     const long pos() const;
@@ -63,34 +71,31 @@ public:
     const std::string& info() const;
     const std::string& format() const;
 
-    void parse_vcf_line(const std::string&, size_t n_cols);
+    void parse_vcf_line(const char*);
     double operator()(size_t, size_t) const;
 
     std::array<size_t,2> dims() const;
 
 
 private:
-    static constexpr size_t buffer_size_ { 1000 };
-    int buffer_idx_ { 0 };
-    std::array<char,buffer_size_> buffer_;
+    size_t n_samples_;
+    size_t k_founders_;
 
-    static constexpr size_t hap_buffer_size_ { 100 };
-    size_t hap_buffer_idx_ { 0 };
-    std::array<char,hap_buffer_size_> hap_buffer_;
+    std::string chrom_ { "" };
+    long pos_ { -1 };
+    std::string id_ { "" };
+    char ref_ { '\0' };
+    char alt_ { '\0' };
+    std::string qual_ { "" };
+    std::string filter_ { "" };
+    std::string info_ { "" };
+    std::string format_ { "" };
 
+    std::unique_ptr<Matrix> samples_ { nullptr };
 
-    std::unique_ptr<Matrix> samples_;
-
-    std::string chrom_;
-    long pos_;
-    std::string id_;
-    char ref_;
-    char alt_;
-    std::string qual_;
-    std::string filter_;
-    std::string info_;
-    std::string format_;
-
+    StringRecord line_parse_ { SPACE_DELIM };
+    StringRecord field_parse_ { MEASUREMENT_DELIM };
+    StringRecord hap_parse_ { HAP_DELIM };
 };
 
 
@@ -100,35 +105,31 @@ public:
 
     HaplotypeVcfParser()=delete;                                // default constructor
     HaplotypeVcfParser(char* filename);                         // constructor
-    HaplotypeVcfParser(std::string filename);                   // constructor
+    //HaplotypeVcfParser(std::string filename);                   // constructor
     HaplotypeVcfParser(const HaplotypeVcfParser&)=delete;       // copy constructor
     HaplotypeVcfParser(const HaplotypeVcfParser&&)=delete;       // move constructor
     HaplotypeVcfParser& operator=(const HaplotypeVcfParser&)=delete;    // copy assignment
     ~HaplotypeVcfParser();                                      // descructor
 
+    size_t n_samples() const;
+    size_t k_founders() const;
+
     bool load_record(HaplotypeDataRecord&);
-    size_t n_samples() { return n_samples_; };
 
 private:
     const std::string fname_;
-    size_t n_cols_;
-    size_t n_samples_;
-    size_t n_meta_lines_;
-    std::unique_ptr<std::string[]> meta_;
-    std::unique_ptr<std::string[]> vcf_standard_colnames_;
-    std::unique_ptr<std::string[]> sample_names_;
+    FILE* file_stream_;
 
-    std::ifstream file_stream_;
+    size_t n_cols_ { 0 };
+    size_t n_samples_ { 0 };
+    size_t k_founders_ { 0 };
 
-    static constexpr size_t buffer_size_ { 1000 };
-    size_t buffer_idx_ { 0 };
-    std::array<char,buffer_size_> buffer_;
+    char* line_buffer_ { nullptr };
+    size_t line_buffer_size_ { 0 };
 
-    void pos_(int);
-    void set_vcf_params_();
-    void load_meta_();
-    void load_header_();
-    bool load_next_field_to_buffer_(const std::string&, size_t&);
+    void pos_(long);
+    size_t get_line_num_char_();
+    void set_params_();
 };
 
-
+#endif

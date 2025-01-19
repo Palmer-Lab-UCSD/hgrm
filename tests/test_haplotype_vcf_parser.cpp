@@ -1,10 +1,11 @@
 
 #include "../include/HaplotypeVcfParser.h"
+#include "../include/utils.h"
 #include <gtest/gtest.h>
 
 
 
-std::string VCF_NAME { "test.vcf" };
+char VCF_NAME[] { "../tests/test.vcf" };
 
 
 TEST(TestHaplotypeVCFParser, Constructor) {

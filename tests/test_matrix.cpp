@@ -13,8 +13,8 @@ TEST(TestMatrix, initialize) {
     EXPECT_EQ(dims[0], n_row);
     EXPECT_EQ(dims[1], m_col);
 
-    for (int i = 0; i < n_row; i++)
-        for (int j = 0; j < m_col; j++)
+    for (size_t i = 0; i < n_row; i++)
+        for (size_t j = 0; j < m_col; j++)
             EXPECT_EQ(a(i, j), 0);
 
     n_row = 0;
@@ -47,13 +47,13 @@ TEST(TestMatrix, val) {
     std::array<size_t, 2> dims { a.dims() };
 
     double x = { 1 };
-    for (int i = 0; i < dims[0]; i++)
-        for (int j = 0; j < dims[1]; j++)
+    for (size_t i = 0; i < dims[0]; i++)
+        for (size_t j = 0; j < dims[1]; j++)
             a(i, j) = x++;
 
     x = 1;
-    for (int i = 0; i < dims[0]; i++)
-        for (int j = 0; j < dims[1]; j++)
+    for (size_t i = 0; i < dims[0]; i++)
+        for (size_t j = 0; j < dims[1]; j++)
             EXPECT_FLOAT_EQ(a(i, j), x++);
 }
 

@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
 
 
     // instantiate record object
-    HaplotypeDataRecord record {};
+    HaplotypeDataRecord record { vcf_data.k_founders(), vcf_data.n_samples() };
 
     // analyze each line, i.e. position, in the VCF
     size_t m_markers { 1 };

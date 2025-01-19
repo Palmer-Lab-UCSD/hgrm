@@ -24,7 +24,7 @@ Matrix::Matrix(size_t nrow, size_t mcol)
             throw std::runtime_error("Matrix must have minimum size of 1");
 
         // set default values to zero
-        for (int i = 0; i < size(); i++)
+        for (size_t i = 0; i < size(); i++)
             data_[i] = 0;
     };
 
@@ -36,7 +36,7 @@ Matrix::Matrix(const Matrix& other)
     data_(std::make_unique<double[]>(other.size())) {
 
         // Matrix values have already been validated
-        for (int i = 0; i < size(); i++)
+        for (size_t i = 0; i < size(); i++)
             data_[i] = other.data_[i];
 }
 
