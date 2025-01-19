@@ -56,7 +56,7 @@ class HaplotypeDataRecord
 public:
 
     HaplotypeDataRecord()=delete;
-    HaplotypeDataRecord(size_t n_samples, size_t k_founders);
+    HaplotypeDataRecord(size_t, size_t);
     HaplotypeDataRecord(const HaplotypeDataRecord&)=delete;
     HaplotypeDataRecord(HaplotypeDataRecord&&)=delete;
 
@@ -118,11 +118,12 @@ public:
 
 private:
     const std::string fname_;
-    FILE* file_stream_;
+    FILE* fid_;
 
     size_t n_cols_ { 0 };
     size_t n_samples_ { 0 };
     size_t k_founders_ { 0 };
+    long fpos_record_one_ { 0 };
 
     char* line_buffer_ { nullptr };
     size_t line_buffer_size_ { 0 };

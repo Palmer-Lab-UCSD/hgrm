@@ -56,7 +56,7 @@ void HaplotypeDataRecord::parse_vcf_line(const char* vcf_line) {
     size_t hap_idx { 0 };              // index with hap counts
     bool hap_found { false };       // determine whether hap dose is in dataset
     size_t sample_idx { 0 };           // sample index
-    size_t founder_count { 0 };
+    size_t founder_idx { 0 };
 
     line_parse_.update_str(vcf_line);
 
@@ -113,10 +113,11 @@ void HaplotypeDataRecord::parse_vcf_line(const char* vcf_line) {
             hap_parse_.update_str(field_parse_.data());
 
             // decompose haplotype counts to respective founders
-            for (founder_count = 0; hap_parse_.next_field(); founder_count++)
-                (*samples_)(founder_count, sample_idx) = std::atof(hap_parse_.data());
+            for (founder_idx = 0; hap_parse_.next_field(); founder_idx++)
+                (*samples_)(founder_idx, sample_idx) = std::atof(hap_parse_.data());
 
-            if (founder_count != k_founders_)
+
+            if (founder_idx != k_founders_)
                 throw std::runtime_error("Number of founders found for sample is incorrect");
             
             sample_idx++;
