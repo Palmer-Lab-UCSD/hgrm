@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
         std::cout << std::endl;
 
         for (int j = 0; j < vcf_data.n_samples(); j++)
-            std::cout << covariance(i, j) << ", " << std::endl;
+            std::cout << covariance(i, j) << ", ";
 
     }
     return 0;

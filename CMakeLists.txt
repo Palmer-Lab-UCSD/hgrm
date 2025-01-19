@@ -86,17 +86,18 @@ target_link_libraries(
 )
 
 
-# add_executable(
-#     hgrm
-#     src/main.cpp
-# )
-# 
-# target_link_libraries(
-#     hgrm
-#     PRIVATE
-#     matrix_lib
-#     parse_lib
-# )
+add_executable(
+    hgrm
+    src/main.cpp
+)
+
+target_link_libraries(
+    hgrm
+    PRIVATE
+    matrix_lib
+    parse_lib
+    utils_lib
+)
 
 
 include(GoogleTest)
