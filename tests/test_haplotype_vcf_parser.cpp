@@ -13,5 +13,6 @@ TEST(TestHaplotypeVCFParser, Constructor) {
     HaplotypeVcfParser vcf { VCF_NAME };
     
     EXPECT_EQ(vcf.n_samples(), 11);
+    EXPECT_EQ(vcf.k_founders(), 8);
 
 }

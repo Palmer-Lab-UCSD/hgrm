@@ -148,8 +148,6 @@ void HaplotypeVcfParser::set_params_() {
     n_samples_ = 0;
     for (; line_parser_.next_field(); n_cols_++) {
 
-        std::cout << line_parser_.data() <<std::endl;
-
         if (n_cols_ < NUM_VCF_FIELDS 
                 && std::strcmp(line_parser_.data(), VCF_FIELD_NAMES[n_cols_]) != 0)
             throw std::runtime_error("File doesn't follow vcf header specification");
@@ -165,22 +163,16 @@ void HaplotypeVcfParser::set_params_() {
                         file_stream_)) == -1 && !feof(file_stream_))
         throw std::runtime_error("File read error");
 
-    std::cout << line_buffer_ << std::endl;
-
     line_parser_.update_str(line_buffer_);
     size_t hap_idx { 0 };
     for (int i = 0; line_parser_.next_field(); i++) {
 
-        std::cout << line_parser_.data() << std::endl;
-
         if (i == NUM_VCF_FIELDS-1) {
             field_parser_.update_str(line_parser_.data());
 
-            for (;field_parser_.next_field(); hap_idx++) {
-                std::cout << field_parser_.data() << std::endl;
-                if (std::strcmp(field_parser_.data(), HAP_CODE))
+            for (;field_parser_.next_field(); hap_idx++)
+                if (std::strcmp(field_parser_.data(), HAP_CODE) == 0)
                     break;
-            }
 
         } else if(i == NUM_VCF_FIELDS) {
             field_parser_.update_str(line_parser_.data()); 
