@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
         for (int i = 0; i < vcf_data.n_samples(); i++) {
             for (int j = i; j < vcf_data.n_samples(); j++) {
                 for (int k = 0; k < vcf_data.k_founders(); k++)
-                    covariance(i, j) = record(i, k) * record(j, k);
+                    covariance(i, j) += record(i, k) * record(j, k);
 
                 if (i != j)
                     covariance(j, i) = covariance(i,j);
