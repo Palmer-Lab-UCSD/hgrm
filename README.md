@@ -1,4 +1,4 @@
-# :building: Being build 🏗️
+# 🏗️ Being build 🏗️
 
 # Compute the genetic relationship matrix using expected haplotype counts
 
