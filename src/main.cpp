@@ -41,10 +41,6 @@ int main(int argc, char* argv[])
 
     Matrix covariance { vcf_data.n_samples(), vcf_data.n_samples() };
 
-    Matrix first_moment { vcf_data.n_samples(), vcf_data.k_founders() };
-    Matrix delta { vcf_data.n_samples(), vcf_data.k_founders() };
-
-
     // instantiate record object
     HaplotypeDataRecord record { vcf_data.n_samples(), vcf_data.k_founders() };
 
@@ -54,31 +50,11 @@ int main(int argc, char* argv[])
     while(vcf_data.load_record(record)) {
 
         // for each founder, compute first and second moments
-        
-        if (m_markers == 1) {
-            for (int i = 0; i < vcf_data.n_samples(); i++) 
-                for (int k = 0; k < vcf_data.k_founders(); k++) {
-                    first_moment(i, k) = record(i, k);
-                    delta(i, k) = 0;
-                } 
-            m_markers++;
-            continue;
-        } else {
-
-            for (int i = 0; i < vcf_data.n_samples(); i++) {
-                for (int k = 0; k < vcf_data.k_founders(); k++) {
-                    delta(i, k) = record(i, k) - first_moment(i, k);
-                    first_moment(i, k) += delta(i, k) / m_markers;
-                }
-            }
-        }
-
 
         for (int i = 0; i < vcf_data.n_samples(); i++) {
             for (int j = i; j < vcf_data.n_samples(); j++) {
                 for (int k = 0; k < vcf_data.k_founders(); k++)
-                    covariance(i, j) = (m_markers-2)*covariance(i, j) / (m_markers-1) 
-                                        + delta(i,k)*delta(j,k)/m_markers;
+                    covariance(i, j) = record(i, k) * record(j, k);
 
                 if (i != j)
                     covariance(j, i) = covariance(i,j);
