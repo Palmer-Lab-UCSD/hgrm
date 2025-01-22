@@ -29,6 +29,7 @@
 
 
 
+int CACHE_PAD { 64 };
 
 int main(int argc, char* argv[])
 {
@@ -43,47 +44,68 @@ int main(int argc, char* argv[])
     Matrix covariance { vcf_data.n_samples(), vcf_data.n_samples() };
 
 
+
+    omp_set_num_threads(10);
     #pragma omp parallel
     {
         // instantiate record object
         HaplotypeDataRecord record { vcf_data.n_samples(), vcf_data.k_founders() };
 
-        // std::cout << std::thread::hardware_concurrency()<< std::endl;
+        std::cout << record.chrom() << " " << record.pos() << std::endl;
         
-    // mutex on reading records, guarantees that each thread has a unique line
-    #pragma omp critical
-    bool record_read { vcf_data.load_record(record) };
+        // mutex on reading records, guarantees that each thread has a unique line
+        bool record_read { true };
+        long nthreads { omp_get_num_threads() };
 
-    while(record_read) {
+        size_t idx[vcf_data.n_samples()] { 0 };
+        int tid { omp_get_thread_num() };
 
-        // for each founder, compute first and second moments
-        //auto start = std::chrono::high_resolution_clock::now();
+        size_t samp_idx { 0 };
+        size_t i { 0 };
+        size_t j { 0 };
 
-        for (int i = 0; i < vcf_data.n_samples(); i++) {
-            for (int j = i; j < vcf_data.n_samples(); j++) {
-                for (int k = 0; k < vcf_data.k_founders(); k++)
-                    covariance(i, j) += record(i, k) * record(j, k);
+        if (tid > 0) {
 
-                if (i != j)
-                    covariance(j, i) = covariance(i,j);
+            for (i=0; samp_idx < vcf_data.n_samples();i++) {
+                samp_idx = tid * CACHE_PAD + i;
+                idx[i] <- samp_idx;
             }
+    
+            for (i,j=0; i < vcf_data.n_samples(); i++, j++)
+                idx[i] = j;
+        }
+    
+        #pragma omp critical
+        record_read = vcf_data.load_record(record);
+
+        while(record_read) {
+
+            std::cout << record.chrom() << " " << record.pos() << std::endl;
+    
+            for (int i = 0; i < vcf_data.n_samples(); i++) {
+                for (int j = i; j < vcf_data.n_samples(); j++) {
+                    for (int k = 0; k < vcf_data.k_founders(); k++)
+                        covariance(idx[i], j) += record(idx[i], k) * record(j, k);
+    
+                    if (i != j)
+                        covariance(j, idx[i]) = covariance(idx[i],j);
+                }
+            }
+    
+            #pragma omp critical
+            record_read = vcf_data.load_record(record);
+    
         }
 
-        //auto end = std::chrono::high_resolution_clock::now();
-        //auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-       // std::cout << "Computation time: " << duration.count() << "s\n";
-
     }
 
-    }
+    // for (int i = 0; i < vcf_data.n_samples(); i++) {
 
-    for (int i = 0; i < vcf_data.n_samples(); i++) {
+    //     std::cout << std::endl;
 
-        std::cout << std::endl;
+    //     for (int j = 0; j < vcf_data.n_samples(); j++)
+    //         std::cout << covariance(i, j) << ", ";
 
-        for (int j = 0; j < vcf_data.n_samples(); j++)
-            std::cout << covariance(i, j) << ", ";
-
-    }
+    // }
     return 0;
 }

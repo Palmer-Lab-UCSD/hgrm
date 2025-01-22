@@ -2,6 +2,8 @@
 #define HEADER_UTILS_H
 
 
+
+#include <memory>
 #include <cstdlib>
 #include <cstring>
 #include <string>
