@@ -14,8 +14,11 @@
 #ifndef HEADER_MATRIX_H
 #define HEADER_MATRIX_H
 
+#include <stdexcept>
+#include <cstddef>
 #include <array>
 #include <utility>
+#include <memory>
 
 class Matrix
 {
