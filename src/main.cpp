@@ -21,6 +21,7 @@
 // reviewed by Claude Sonnet, the AI assistant from Anthropic
 // (Jan 2025), with minor recommendations incorporated.
 //
+#include <omp.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -41,15 +42,22 @@ int main(int argc, char* argv[])
 
     Matrix covariance { vcf_data.n_samples(), vcf_data.n_samples() };
 
-    // instantiate record object
-    HaplotypeDataRecord record { vcf_data.n_samples(), vcf_data.k_founders() };
 
-    // analyze each line, i.e. position, in the VCF
-    size_t m_markers { 1 };
+    #pragma omp parallel
+    {
+        // instantiate record object
+        HaplotypeDataRecord record { vcf_data.n_samples(), vcf_data.k_founders() };
 
-    while(vcf_data.load_record(record)) {
+        // std::cout << std::thread::hardware_concurrency()<< std::endl;
+        
+    // mutex on reading records, guarantees that each thread has a unique line
+    #pragma omp critical
+    bool record_read { vcf_data.load_record(record) };
+
+    while(record_read) {
 
         // for each founder, compute first and second moments
+        //auto start = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < vcf_data.n_samples(); i++) {
             for (int j = i; j < vcf_data.n_samples(); j++) {
@@ -61,9 +69,13 @@ int main(int argc, char* argv[])
             }
         }
 
-        m_markers++;
+        //auto end = std::chrono::high_resolution_clock::now();
+        //auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+       // std::cout << "Computation time: " << duration.count() << "s\n";
+
     }
 
+    }
 
     for (int i = 0; i < vcf_data.n_samples(); i++) {
 
