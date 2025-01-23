@@ -45,11 +45,11 @@ Matrix::Matrix(Matrix&& other)
     : nrow_(other.nrow_), mcol_(other.mcol_), data_(std::move(other.data_)) {};
 
 
-double Matrix::operator()(size_t i, size_t j) const {
+double Matrix::operator()(const size_t& i, const size_t& j) const {
     return data_[mat_idx_to_array_(i, j)];
 }
 
-double& Matrix::operator()(size_t i, size_t j) {
+double& Matrix::operator()(const size_t& i, const size_t& j) {
     return data_[mat_idx_to_array_(i, j)];
 }
 
@@ -58,7 +58,7 @@ std::array<size_t,2> Matrix::dims() const {
 }
 
 
-size_t Matrix::mat_idx_to_array_(size_t i, size_t j) const {
+size_t Matrix::mat_idx_to_array_(const size_t& i, const size_t& j) const {
     if (i >= nrow_ || j >= mcol_)
         throw std::runtime_error("Indices must be postive integers or zero.");
 

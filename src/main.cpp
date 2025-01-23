@@ -28,6 +28,7 @@
 
 
 
+int BLOCK_SIZE { 64 };
 
 int main(int argc, char* argv[])
 {
@@ -37,39 +38,53 @@ int main(int argc, char* argv[])
     // open VCF file and parse meta data and header
     HaplotypeVcfParser vcf_data { argv[1] };
 
-    // instantiate matrices to hold calculations
 
+    int n_blocks { 1 + static_cast<int>(vcf_data.n_samples() / BLOCK_SIZE) };
+
+
+    // instantiate matrices to hold calculations
     Matrix covariance { vcf_data.n_samples(), vcf_data.n_samples() };
 
     // instantiate record object
     HaplotypeDataRecord record { vcf_data.n_samples(), vcf_data.k_founders() };
 
-    // analyze each line, i.e. position, in the VCF
-    size_t m_markers { 1 };
-
+    int ii,jj,i,j,end_block_i,end_block_j,start_block_i,start_block_j;
     while(vcf_data.load_record(record)) {
 
         // for each founder, compute first and second moments
 
-        for (int i = 0; i < vcf_data.n_samples(); i++) {
-            for (int j = i; j < vcf_data.n_samples(); j++) {
-                for (int k = 0; k < vcf_data.k_founders(); k++)
-                    covariance(i, j) += record(i, k) * record(j, k);
+        for (i = 0; i < n_blocks; i++) {
+            for (j = i; j < n_blocks; j++) {
+
+                start_block_i = i*BLOCK_SIZE;
+                end_block_i = (i + 1)*BLOCK_SIZE;
+                if (end_block_i > vcf_data.n_samples())
+                    end_block_i = vcf_data.n_samples();
+                
+                start_block_j = j*BLOCK_SIZE;
+                end_block_j = (i + 1)*BLOCK_SIZE;
+                if (end_block_j > vcf_data.n_samples())
+                    end_block_j = vcf_data.n_samples();
+
+                for (ii = start_block_i; ii < end_block_i; ii++)
+                    for (jj=start_block_j; jj < end_block_j; jj++) {
+
+                        for (int k = 0; k < vcf_data.k_founders(); k++)
+                            covariance(ii, jj) += record(ii, k) * record(jj, k);
+                    }
 
                 if (i != j)
-                    covariance(j, i) = covariance(i,j);
+                    covariance(jj, ii) = covariance(ii,jj);
             }
         }
 
-        m_markers++;
     }
 
 
-    for (int i = 0; i < vcf_data.n_samples(); i++) {
-
+    for (int i = 0; i < 10; i++) {
         std::cout << std::endl;
 
-        for (int j = 0; j < vcf_data.n_samples(); j++)
+        for (int j = 0; j < 10; j++)
             std::cout << covariance(i, j) << ", ";
 
     }

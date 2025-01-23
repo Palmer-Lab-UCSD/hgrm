@@ -63,8 +63,8 @@ add_executable(
 target_link_libraries(
     test_haplotype_data_record
     PRIVATE
-    matrix_lib
     parse_lib
+    matrix_lib
     utils_lib
     GTest::gtest_main
 )
@@ -79,8 +79,8 @@ add_executable(
 target_link_libraries(
     test_haplotype_vcf_parser
     PRIVATE
-    matrix_lib
     parse_lib
+    matrix_lib
     utils_lib
     GTest::gtest_main
 )
@@ -94,8 +94,8 @@ add_executable(
 target_link_libraries(
     hgrm
     PRIVATE
-    matrix_lib
     parse_lib
+    matrix_lib
     utils_lib
 )
 
