@@ -8,7 +8,7 @@
 # the AI assistant by Anthropic reviewed this file and provided
 # recommendations.
 
-cmake_minimum_required(VERSION 3.31)
+cmake_minimum_required(VERSION 3.21)
 project(hgrm VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD 17)
