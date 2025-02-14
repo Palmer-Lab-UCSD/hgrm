@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
         throw("Must specify vcf");
 
     // open VCF file and parse meta data and header
-    HaplotypeVcfParser vcf_data { argv[1], 10000000 };
+    HaplotypeVcfParser vcf_data { argv[1], 100000 };
 
 
     int n_blocks { 1 + static_cast<int>(vcf_data.n_samples() / BLOCK_SIZE) };
@@ -51,7 +51,6 @@ int main(int argc, char* argv[])
     // analyze each line, i.e. position, in the VCF
     size_t m_markers { 1 };
 
-    std::cout << "here" << std::endl;
     double sum { 0 };
     const double* rowi { nullptr };
     const double* rowj { nullptr };
@@ -73,23 +72,24 @@ int main(int argc, char* argv[])
                 for (int k = 0; k < k_founders; k++)
                     sum += rowi[k] * rowj[k];
 
-                covariance(i, j) = sum;
+                covariance(i, j) += sum;
 
                 if (i != j)
-                    covariance(j, i) = sum;
+                    covariance(j, i) += sum;
             }
         }
 
     }
 
 
-    // for (int i = 0; i < vcf_data.n_samples(); i++) {
+    int i { 0 };
+    int j { 0 };
+    for (i = 0; i < n_samples; i++) {
 
-    //     std::cout << std::endl;
+        for (j = 0; j < n_samples-1; j++)
+            std::cout << covariance(i, j) << ",";
 
-    //     for (int j = 0; j < vcf_data.n_samples(); j++)
-    //         std::cout << covariance(i, j) << ", ";
-
-    // }
+        std::cout << covariance(i,j) << std::endl;
+    }
     return 0;
 }
