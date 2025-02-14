@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
         throw("Must specify vcf");
 
     // open VCF file and parse meta data and header
-    HaplotypeVcfParser vcf_data { argv[1] };
+    HaplotypeVcfParser vcf_data { argv[1], 10000000 };
 
     // instantiate matrices to hold calculations
 
@@ -47,17 +47,32 @@ int main(int argc, char* argv[])
     // analyze each line, i.e. position, in the VCF
     size_t m_markers { 1 };
 
+    std::cout << "here" << std::endl;
+    double sum { 0 };
+    const double* rowi { nullptr };
+    const double* rowj { nullptr };
+    const size_t k_founders { vcf_data.k_founders() };
+    const size_t n_samples { vcf_data.n_samples() };
+
     while(vcf_data.load_record(record)) {
 
         // for each founder, compute first and second moments
+        for (int i = 0; i < n_samples; i++) {
 
-        for (int i = 0; i < vcf_data.n_samples(); i++) {
-            for (int j = i; j < vcf_data.n_samples(); j++) {
-                for (int k = 0; k < vcf_data.k_founders(); k++)
-                    covariance(i, j) += record(i, k) * record(j, k);
+            rowi = &record(i, 0);
+
+            for (int j = i; j < n_samples; j++) {
+
+                rowj = &record(j,0);
+                sum = 0;
+
+                for (int k = 0; k < k_founders; k++)
+                    sum += rowi[k] * rowj[k];
+
+                covariance(i, j) = sum;
 
                 if (i != j)
-                    covariance(j, i) = covariance(i,j);
+                    covariance(j, i) = sum;
             }
         }
 
@@ -65,13 +80,13 @@ int main(int argc, char* argv[])
     }
 
 
-    for (int i = 0; i < vcf_data.n_samples(); i++) {
+    // for (int i = 0; i < vcf_data.n_samples(); i++) {
 
-        std::cout << std::endl;
+    //     std::cout << std::endl;
 
-        for (int j = 0; j < vcf_data.n_samples(); j++)
-            std::cout << covariance(i, j) << ", ";
+    //     for (int j = 0; j < vcf_data.n_samples(); j++)
+    //         std::cout << covariance(i, j) << ", ";
 
-    }
+    // }
     return 0;
 }

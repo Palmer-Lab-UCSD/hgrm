@@ -15,24 +15,43 @@
 
 #include "HaplotypeVcfParser.h"
 
+const static size_t DEFAULT_BUFFER_SIZE { 100000 };
+
+
+
+
 HaplotypeVcfParser::HaplotypeVcfParser(char* filename)
     : fname_(filename),
-        fid_(fopen(filename, "r")) {
-
-    // check whether file stream open correctly 
-    if (!fid_)
-        throw std::runtime_error("File Access error");
-    else if (feof(fid_))
-        throw std::runtime_error("File is empty");
+        file_io_(BufferedRead(filename, DEFAULT_BUFFER_SIZE)) {
 
     // get number of characters in data record for line buffer size
     size_t nchar { get_line_num_char_() };
 
+    if (nchar == 0)
+        throw std::runtime_error("No data to read");
 
     // make buffer 10% larger then the number of characters read.
     line_buffer_size_ = static_cast<size_t>(nchar * 1.1);
-    line_buffer_ = static_cast<char*>(malloc(line_buffer_size_));
-    line_buffer_[0] = '\0';
+    line_buffer_.reset(line_buffer_size_);
+
+    set_params_();
+    pos_(fpos_record_one_);
+};
+
+
+HaplotypeVcfParser::HaplotypeVcfParser(char* filename, size_t buff_size)
+    : fname_(filename),
+        file_io_(BufferedRead(filename, buff_size)) {
+
+    // get number of characters in data record for line buffer size
+    size_t nchar { get_line_num_char_() };
+
+    if (nchar == 0)
+        throw std::runtime_error("No data to read");
+
+    // make buffer 10% larger then the number of characters read.
+    line_buffer_size_ = static_cast<size_t>(nchar * 1.1);
+    line_buffer_.reset(line_buffer_size_);
 
     set_params_();
     pos_(fpos_record_one_);
@@ -62,11 +81,11 @@ HaplotypeVcfParser::HaplotypeVcfParser(char* filename)
 // };
 
 
-HaplotypeVcfParser::~HaplotypeVcfParser() { 
-    if(fid_)
-        fclose(fid_);
-    free(line_buffer_);
-}
+//HaplotypeVcfParser::~HaplotypeVcfParser() { 
+//    if(fid_)
+//        fclose(fid_);
+//    // free(line_buffer_);
+//}
 
 
 size_t HaplotypeVcfParser::get_line_num_char_() {
@@ -75,25 +94,31 @@ size_t HaplotypeVcfParser::get_line_num_char_() {
 
     size_t char_count { 0 };
     size_t max_char_count { 0 };
-    int c { 0 };
-    int prev { 'a' };
-    while ((c = getc(fid_)) != EOF) {
+    char c;
+    char prev { 'a' };
+
+    while ((c = file_io_.get_char()) != '\0') {
 
         char_count++;
         
+        // First data record is the first new line that
+        // isn't prefixed by meta character
         if (prev == '\n' && c != META_PREFIX)
             line_record_found = true;
+
+        if (c == '\n' && char_count > max_char_count) {
+            max_char_count = char_count;
+            char_count = 0;
+        }
+
 
         if (line_record_found && c == '\n')
             break;
 
-        if (c == '\n' && char_count > max_char_count)
-            max_char_count = char_count;
-
         prev = c;
     }
 
-    return char_count;
+    return max_char_count;
 }
 
 
@@ -103,13 +128,10 @@ size_t HaplotypeVcfParser::n_samples() const { return n_samples_; }
 size_t HaplotypeVcfParser::k_founders() const { return k_founders_; }
 
 
-void HaplotypeVcfParser::pos_(long n) { 
-    if (n == 0)
-        rewind(fid_);
-
-    int c = 0;
-    if ((c = fseek(fid_, n, SEEK_SET)) != 0)
-        throw std::runtime_error("Failed to relocate file stream to position.");
+void HaplotypeVcfParser::pos_(size_t n) { 
+    file_io_.reset();
+    if (n != 0)
+        file_io_.seek(n);
 }
 
 
@@ -117,31 +139,34 @@ void HaplotypeVcfParser::set_params_() {
     pos_(0);
 
     // skip meta data lines
-    ssize_t n { 0 };
-    while ((n = getline(&line_buffer_,
-                    &line_buffer_size_,
-                    fid_)) != EOF || n < 0) {
 
-        if ( line_buffer_[0] == META_PREFIX && line_buffer_[1] == META_PREFIX)
+    size_t n { 0 };
+    size_t num_bytes { 0 };
+    while ((n = file_io_.get_line(line_buffer_)) > 0) {
+
+        // the +1 is because I don't write newline characters to buffer
+        num_bytes += line_buffer_.size()+1;
+
+        if (line_buffer_(0) == META_PREFIX && line_buffer_(1) == META_PREFIX)
             continue;
 
         break;
     }
 
-    if (ferror(fid_) || n < 0 && !feof(fid_))
-        throw std::runtime_error("File error");
+    // Store file position of first record
+    fpos_record_one_ = sizeof(line_buffer_(0)) * num_bytes;
 
     // if there is no header
-    if (line_buffer_[0] != META_PREFIX)
+    if (line_buffer_(0) != META_PREFIX)
         return;
 
 
-    if (std::isspace(line_buffer_[0]))
+    if (std::isspace(line_buffer_(0)))
         throw std::runtime_error("First element of VCF line must not be blank.");
 
 
     // Get column number and sample number
-    StringRecord line_parser_ { SPACE_DELIM, line_buffer_ };
+    StringRecord line_parser_ { SPACE_DELIM, line_buffer_.data() };
     StringRecord field_parser_ { MEASUREMENT_DELIM };
     StringRecord hap_parser_ { HAP_DELIM };
 
@@ -158,16 +183,12 @@ void HaplotypeVcfParser::set_params_() {
 
     }
 
-    // Store file position of first record
-    fpos_record_one_ = ftell(fid_);
 
     // get k founders from record
-    if ((n = getline(&line_buffer_, 
-                        &line_buffer_size_,
-                        fid_)) == -1 && !feof(fid_))
-        throw std::runtime_error("File read error");
+    if ((n = file_io_.get_line(line_buffer_)) == 0)
+        throw std::runtime_error("End of file");
 
-    line_parser_.update_str(line_buffer_);
+    line_parser_.update_str(line_buffer_.data());
     size_t hap_idx { 0 };
     for (int i = 0; line_parser_.next_field(); i++) {
 
@@ -201,15 +222,12 @@ void HaplotypeVcfParser::set_params_() {
 
 bool HaplotypeVcfParser::load_record(HaplotypeDataRecord& record) {
 
-    ssize_t n { 0 };
+    size_t n { 0 };
 
-    if ((n = getline(&line_buffer_, &line_buffer_size_, fid_)) == -1) {
-        if (feof(fid_))
-            return false;
-        throw std::runtime_error("File read error");
-    }
+    if ((n = file_io_.get_line(line_buffer_)) == 0)
+        return false;
 
-    record.parse_vcf_line(line_buffer_);
+    record.parse_vcf_line(line_buffer_.data());
 
     return true;
 }
