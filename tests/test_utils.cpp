@@ -8,7 +8,7 @@ TEST(TestCharBuffer, Constructor) {
     size_t buff_size { 100 };
     CharBuffer buff { buff_size };
 
-    EXPECT_EQ(buff.size(), buff_size);
+    EXPECT_EQ(buff.buffer_size(), buff_size);
 }
 
 
@@ -25,11 +25,12 @@ TEST(TestCharBuffer, Append) {
     EXPECT_EQ(buff(1), 'h');
     EXPECT_EQ(buff(2), 'e');
 
-    EXPECT_THROW(buff(3), std::out_of_range);
+    EXPECT_THROW(buff(6), std::out_of_range);
     EXPECT_THROW(buff(5), std::out_of_range);
     EXPECT_THROW(buff(-1), std::out_of_range);
 
     buff.append('r');
+    buff.append('e');
     EXPECT_THROW(buff.append('e'), std::out_of_range); 
 }
 
@@ -68,7 +69,7 @@ TEST(TestCharBuffer, Data) {
 TEST(TestStringRecord, ConstructorDelim) {
     CharBuffer buf { 10 };
     char s[] { "the\tcat\n" };
-    StringRecord record { "\t\n\v\f\r" };
+    StringRecord record { '\t' };
 
     record.update_str(s);
 
@@ -88,7 +89,7 @@ TEST(TestStringRecord, ConstructorDelim) {
 }
 
 TEST(TestStringRecord, SingleArgConstructor) {
-    StringRecord record { "\t\n\v\f\r" };
+    StringRecord record { '\t' };
 
     EXPECT_EQ(record.size(), 0);
     EXPECT_FALSE(record.next_field());

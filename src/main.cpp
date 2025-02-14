@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
         throw("Must specify vcf");
 
     // open VCF file and parse meta data and header
-    HaplotypeVcfParser vcf_data { argv[1] };
+    HaplotypeVcfParser vcf_data { argv[1], 100000 };
 
 
     int n_blocks { 1 + static_cast<int>(vcf_data.n_samples() / BLOCK_SIZE) };
@@ -48,45 +48,48 @@ int main(int argc, char* argv[])
     // instantiate record object
     HaplotypeDataRecord record { vcf_data.n_samples(), vcf_data.k_founders() };
 
-    int ii,jj,i,j,end_block_i,end_block_j,start_block_i,start_block_j;
+    // analyze each line, i.e. position, in the VCF
+    size_t m_markers { 1 };
+
+    double sum { 0 };
+    const double* rowi { nullptr };
+    const double* rowj { nullptr };
+    const size_t k_founders { vcf_data.k_founders() };
+    const size_t n_samples { vcf_data.n_samples() };
+
     while(vcf_data.load_record(record)) {
 
         // for each founder, compute first and second moments
+        for (int i = 0; i < n_samples; i++) {
 
-        for (i = 0; i < n_blocks; i++) {
-            for (j = i; j < n_blocks; j++) {
+            rowi = &record(i, 0);
 
-                start_block_i = i*BLOCK_SIZE;
-                end_block_i = (i + 1)*BLOCK_SIZE;
-                if (end_block_i > vcf_data.n_samples())
-                    end_block_i = vcf_data.n_samples();
-                
-                start_block_j = j*BLOCK_SIZE;
-                end_block_j = (i + 1)*BLOCK_SIZE;
-                if (end_block_j > vcf_data.n_samples())
-                    end_block_j = vcf_data.n_samples();
+            for (int j = i; j < n_samples; j++) {
 
-                for (ii = start_block_i; ii < end_block_i; ii++)
-                    for (jj=start_block_j; jj < end_block_j; jj++) {
+                rowj = &record(j,0);
+                sum = 0;
 
-                        for (int k = 0; k < vcf_data.k_founders(); k++)
-                            covariance(ii, jj) += record(ii, k) * record(jj, k);
-                    }
+                for (int k = 0; k < k_founders; k++)
+                    sum += rowi[k] * rowj[k];
+
+                covariance(i, j) += sum;
 
                 if (i != j)
-                    covariance(jj, ii) = covariance(ii,jj);
+                    covariance(j, i) += sum;
             }
         }
 
     }
 
 
-    for (int i = 0; i < 10; i++) {
-        std::cout << std::endl;
+    int i { 0 };
+    int j { 0 };
+    for (i = 0; i < n_samples; i++) {
 
-        for (int j = 0; j < 10; j++)
-            std::cout << covariance(i, j) << ", ";
+        for (j = 0; j < n_samples-1; j++)
+            std::cout << covariance(i, j) << ",";
 
+        std::cout << covariance(i,j) << std::endl;
     }
     return 0;
 }

@@ -130,7 +130,7 @@ void HaplotypeDataRecord::parse_vcf_line(const char* vcf_line) {
 }
 
 
-double HaplotypeDataRecord::operator()(size_t i, size_t j) const {
+const double& HaplotypeDataRecord::operator()(size_t i, size_t j) const {
     return (*samples_)(i, j);
 }
 

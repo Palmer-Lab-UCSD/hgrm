@@ -1,0 +1,14 @@
+<<<<<<< HEAD
+build/
+*.swp
+*.swo
+*~
+*.DS_store
+
+=======
+*.DS_Store
+build/
+*.swp
+*.swo
+.vscode/
+>>>>>>> a967b24d8eb5e51d2d3d7df489d9df2f62cb62d0
