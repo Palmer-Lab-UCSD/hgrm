@@ -1,5 +1,6 @@
-*.DS_Store
 build/
 *.swp
 *.swo
+*~
+*.DS_store
 *.vscode/

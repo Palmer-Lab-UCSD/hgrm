@@ -28,6 +28,7 @@
 
 
 
+int BLOCK_SIZE { 64 };
 
 int main(int argc, char* argv[])
 {
@@ -35,10 +36,13 @@ int main(int argc, char* argv[])
         throw("Must specify vcf");
 
     // open VCF file and parse meta data and header
-    HaplotypeVcfParser vcf_data { argv[1] };
+    HaplotypeVcfParser vcf_data { argv[1], 100000 };
+
+
+    int n_blocks { 1 + static_cast<int>(vcf_data.n_samples() / BLOCK_SIZE) };
+
 
     // instantiate matrices to hold calculations
-
     Matrix covariance { vcf_data.n_samples(), vcf_data.n_samples() };
 
     // instantiate record object
@@ -47,31 +51,45 @@ int main(int argc, char* argv[])
     // analyze each line, i.e. position, in the VCF
     size_t m_markers { 1 };
 
+    double sum { 0 };
+    const double* rowi { nullptr };
+    const double* rowj { nullptr };
+    const size_t k_founders { vcf_data.k_founders() };
+    const size_t n_samples { vcf_data.n_samples() };
+
     while(vcf_data.load_record(record)) {
 
         // for each founder, compute first and second moments
+        for (int i = 0; i < n_samples; i++) {
 
-        for (int i = 0; i < vcf_data.n_samples(); i++) {
-            for (int j = i; j < vcf_data.n_samples(); j++) {
-                for (int k = 0; k < vcf_data.k_founders(); k++)
-                    covariance(i, j) += record(i, k) * record(j, k);
+            rowi = &record(i, 0);
+
+            for (int j = i; j < n_samples; j++) {
+
+                rowj = &record(j,0);
+                sum = 0;
+
+                for (int k = 0; k < k_founders; k++)
+                    sum += rowi[k] * rowj[k];
+
+                covariance(i, j) += sum;
 
                 if (i != j)
-                    covariance(j, i) = covariance(i,j);
+                    covariance(j, i) += sum;
             }
         }
 
-        m_markers++;
     }
 
 
-    for (int i = 0; i < vcf_data.n_samples(); i++) {
+    int i { 0 };
+    int j { 0 };
+    for (i = 0; i < n_samples; i++) {
 
-        std::cout << std::endl;
+        for (j = 0; j < n_samples-1; j++)
+            std::cout << covariance(i, j) << ",";
 
-        for (int j = 0; j < vcf_data.n_samples(); j++)
-            std::cout << covariance(i, j) << ", ";
-
+        std::cout << covariance(i,j) << std::endl;
     }
     return 0;
 }
