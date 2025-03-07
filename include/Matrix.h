@@ -14,11 +14,11 @@
 #ifndef HEADER_MATRIX_H
 #define HEADER_MATRIX_H
 
-#include <stdexcept>
 #include <cstddef>
+#include <stdexcept>
+#include <memory>
 #include <array>
 #include <utility>
-#include <memory>
 
 class Matrix
 {
@@ -30,8 +30,8 @@ public:
     Matrix& operator=(Matrix&&)=delete;             // move assignment
                                             
 
-    double operator()(size_t, size_t) const;
-    double& operator()(size_t, size_t);
+    double operator()(const size_t&, const size_t&) const;
+    double& operator()(const size_t&, const size_t&);
 
     size_t size() const;
     std::array<size_t,2> dims() const;
@@ -40,7 +40,7 @@ private:
     const size_t nrow_;
     const size_t mcol_;
     std::unique_ptr<double[]> data_;
-    size_t mat_idx_to_array_(size_t, size_t) const;
+    size_t mat_idx_to_array_(const size_t&, const size_t&) const;
 };
 
 #endif

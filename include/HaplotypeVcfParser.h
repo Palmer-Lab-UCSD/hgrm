@@ -22,7 +22,6 @@
 #include <array>
 #include <cstdlib>
 #include <cstring>
-#include <cstdio>
 #include "Matrix.h"
 #include "utils.h"
 
@@ -30,11 +29,11 @@
 // samples are separated by white space
 const char HAP_CODE[] { "HD" };
 const char META_PREFIX { '#' };
-const std::string MEASUREMENT_DELIM { ":" };
-const std::string HAP_DELIM { "," };
+const char MEASUREMENT_DELIM { ':' };
+const char HAP_DELIM { ',' };
 const int NUM_VCF_FIELDS { 9 };
-const std::string SPACE_DELIM { " \t\n\v\f\r" };
-const size_t BUFFER_SIZE { 1000 };
+const char SPACE_DELIM { '\t' };
+
 
 // NOTE: in the future it may be best to test for set membership
 static const char* VCF_FIELD_NAMES[NUM_VCF_FIELDS] {
@@ -72,7 +71,7 @@ public:
     const std::string& format() const;
 
     void parse_vcf_line(const char*);
-    double operator()(size_t, size_t) const;
+    const double& operator()(size_t, size_t) const;
 
     std::array<size_t,2> dims() const;
 
@@ -105,11 +104,12 @@ public:
 
     HaplotypeVcfParser()=delete;                                // default constructor
     HaplotypeVcfParser(char* filename);                         // constructor
+    HaplotypeVcfParser(char* filename, size_t buffer_size);                         // constructor
     //HaplotypeVcfParser(std::string filename);                   // constructor
     HaplotypeVcfParser(const HaplotypeVcfParser&)=delete;       // copy constructor
     HaplotypeVcfParser(const HaplotypeVcfParser&&)=delete;       // move constructor
     HaplotypeVcfParser& operator=(const HaplotypeVcfParser&)=delete;    // copy assignment
-    ~HaplotypeVcfParser();                                      // descructor
+    // ~HaplotypeVcfParser();                                      // descructor
 
     size_t n_samples() const;
     size_t k_founders() const;
@@ -118,17 +118,18 @@ public:
 
 private:
     const std::string fname_;
-    FILE* fid_;
+    BufferedRead file_io_;
+
+    CharBuffer line_buffer_;
+    size_t line_buffer_size_ { 0 };
 
     size_t n_cols_ { 0 };
     size_t n_samples_ { 0 };
     size_t k_founders_ { 0 };
-    long fpos_record_one_ { 0 };
+    size_t fpos_record_one_ { 0 };
 
-    char* line_buffer_ { nullptr };
-    size_t line_buffer_size_ { 0 };
 
-    void pos_(long);
+    void pos_(size_t);
     size_t get_line_num_char_();
     void set_params_();
 };

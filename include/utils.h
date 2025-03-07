@@ -3,26 +3,30 @@
 
 
 #include <cstdlib>
+#include <cctype>
+#include <cstdio>
 #include <cstring>
 #include <string>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 
 
-const size_t DEFAULT_BUFFER_SIZE { 1000 };
 
 class CharBuffer {
 public:
-    CharBuffer()=delete;
+    CharBuffer();
     CharBuffer(size_t);
     CharBuffer(const CharBuffer&)=delete;
     CharBuffer(CharBuffer&&)=delete;
 
     const char& operator()(size_t) const;
     const size_t& size() const;
+    const size_t& buffer_size() const;
     
     void append(char s);
     void reset();           // set buffer_idx_ to zero
+    void reset(size_t buffer_size);           // set buffer_idx_ to zero
 
     // remember that it is the caller's responsibility to not
     // dereference raw pointer after the CharBuffer instance is 
@@ -30,7 +34,7 @@ public:
     const char* data() const;
 
 private:
-    const size_t buffer_size_;
+    size_t buffer_size_;
     size_t buffer_idx_;
     std::unique_ptr<char[]> buffer_;
 };
@@ -41,9 +45,9 @@ class StringRecord {
 public:
     // input only delimiters
     StringRecord()=delete;
-    StringRecord(const std::string);
-    StringRecord(const std::string, const size_t);
-    StringRecord(const std::string, const char*);
+    StringRecord(const char);
+    StringRecord(const char, const size_t);
+    StringRecord(const char, const char*);
 
     void update_str(const char* s);
 
@@ -57,11 +61,42 @@ private:
     size_t size_ { 0 };
     size_t idx_ { 0 };
     const char* str_;
-    const std::string delim_;
+    const char delim_;
     
     CharBuffer buf_;
-    bool is_delim_(char);
+    std::function<bool(char)> is_delim_;
+    bool char_is_delim_(char) const;
+
 };
 
 
+class BufferedRead {
+public:
+    BufferedRead()=delete;
+    BufferedRead(const BufferedRead&)=delete;
+    BufferedRead(BufferedRead&&)=delete;
+    BufferedRead& operator=(const BufferedRead&)=delete;
+
+    BufferedRead(char* filename, size_t buff_size);
+    ~BufferedRead();
+
+    size_t get_line(CharBuffer& line_buf);
+    // size_t get_line(std::unique_ptr<char[]> line_buf);
+    char get_char();
+    void seek(size_t n);
+    size_t tell();
+    void reset();
+
+private:
+    const char* filename_;
+    const size_t buff_size_;
+
+    FILE* fid_;
+    std::unique_ptr<char[]> buffer_;
+
+    size_t buffer_pos_ { 0 };
+
+    size_t update_buffer_();
+
+};
 #endif
