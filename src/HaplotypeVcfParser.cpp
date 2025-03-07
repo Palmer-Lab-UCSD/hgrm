@@ -49,6 +49,7 @@ HaplotypeVcfParser::HaplotypeVcfParser(char* filename, size_t buff_size)
     if (nchar == 0)
         throw std::runtime_error("No data to read");
 
+    std::cout << "Num char: " << nchar << std::endl;
     // make buffer 10% larger then the number of characters read.
     line_buffer_size_ = static_cast<size_t>(nchar * 1.1);
     line_buffer_.reset(line_buffer_size_);
@@ -90,32 +91,17 @@ HaplotypeVcfParser::HaplotypeVcfParser(char* filename, size_t buff_size)
 
 size_t HaplotypeVcfParser::get_line_num_char_() {
 
-    bool line_record_found { false };
-
     size_t char_count { 0 };
     size_t max_char_count { 0 };
     char c;
-    char prev { 'a' };
 
     while ((c = file_io_.get_char()) != '\0') {
-
         char_count++;
-        
-        // First data record is the first new line that
-        // isn't prefixed by meta character
-        if (prev == '\n' && c != META_PREFIX)
-            line_record_found = true;
 
         if (c == '\n' && char_count > max_char_count) {
             max_char_count = char_count;
             char_count = 0;
         }
-
-
-        if (line_record_found && c == '\n')
-            break;
-
-        prev = c;
     }
 
     return max_char_count;
