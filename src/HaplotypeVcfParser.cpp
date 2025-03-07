@@ -49,7 +49,6 @@ HaplotypeVcfParser::HaplotypeVcfParser(char* filename, size_t buff_size)
     if (nchar == 0)
         throw std::runtime_error("No data to read");
 
-    std::cout << "Num char: " << nchar << std::endl;
     // make buffer 10% larger then the number of characters read.
     line_buffer_size_ = static_cast<size_t>(nchar * 1.1);
     line_buffer_.reset(line_buffer_size_);
