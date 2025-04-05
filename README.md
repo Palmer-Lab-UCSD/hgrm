@@ -1,4 +1,4 @@
-# 🏗️ Being build 🏗️
+# 🏗️ Being built 🏗️
 
 # Compute the genetic relationship matrix using expected haplotype counts
 
