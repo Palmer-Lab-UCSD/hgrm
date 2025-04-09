@@ -27,7 +27,6 @@
 
 
 
-int BLOCK_SIZE { 64 };
 size_t MARKER_PRINT_INTERVAL { 1000 };
 char HELP_LONG_FLAG[] { "--help" };
 char HELP_SHORT_FLAG[] { "-h" };
@@ -99,12 +98,12 @@ int main(int argc, char* argv[])
     while(vcf_data.load_record(record)) {
 
         // for each founder, compute first and second moments
-        for (int i = 0; i < n_samples; i++) {
+        for (size_t i = 0; i < n_samples; i++) {
 
             rowi = &record(i, 0);
             rowi_cov = &covariance(i, 0);
 
-            for (int j = i; j < n_samples; j++) {
+            for (size_t j = i; j < n_samples; j++) {
 
                 rowj = &record(j,0);
                 sum = 0;
