@@ -28,7 +28,7 @@
 
 
 int BLOCK_SIZE { 64 };
-size_t MARKER_PRINT_INTERVAL { 0 };
+size_t MARKER_PRINT_INTERVAL { 1000 };
 char HELP_LONG_FLAG[] { "--help" };
 char HELP_SHORT_FLAG[] { "-h" };
 
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 {
 
     if (argc != 2 && argc != 3)
-        throw("Must specify vcf");
+        throw std::runtime_error("Must specify vcf");
 
     if (argc == 2 
             && (strcmp(argv[1], HELP_SHORT_FLAG) == 0
@@ -44,10 +44,10 @@ int main(int argc, char* argv[])
         printf("hgrm - Compute GRM from expected haplotype counts.\n"
                "Usage\n"
                "\n"
-               "  hgrm <input_vcf_filename> [<output_vcf_filename>]\n"
+               "  hgrm <input_vcf_filename> [<output_matrix_filename>]\n"
                "\n"
                "Options\n"
-               "  output_vcf_filename   Filename to print covariance matrix\n"
+               "  output_matrix_filename   Filename to print covariance matrix\n"
                "\n"
                "Description\n"
                "  A program to compute a genetic relationship matrix from a vcf\n"
@@ -72,9 +72,6 @@ int main(int argc, char* argv[])
 
     // open VCF file and parse meta data and header
     HaplotypeVcfParser vcf_data { filename_input, 100000 };
-
-
-    int n_blocks { 1 + static_cast<int>(vcf_data.n_samples() / BLOCK_SIZE) };
 
 
     // instantiate matrices to hold calculations
@@ -128,15 +125,17 @@ int main(int argc, char* argv[])
 
     if (argc == 3 && filename_output != nullptr) {
 
-        fout = fopen(filename_output, "w");
+        if ((fout = fopen(filename_output, "w")) == nullptr)
+            throw std::runtime_error("Error in opening file for writing.");
+
         fprintf(stdout, "Writing results to file %s\n", filename_output);
 
     } else if (argc == 3 && filename_output == nullptr)
         throw std::runtime_error("Output filename is not specified");
 
 
-    int i { 0 };
-    int j { 0 };
+    size_t i { 0 };
+    size_t j { 0 };
     for (i = 0; i < n_samples; i++) {
 
         for (j = 0; j < n_samples-1; j++)
@@ -144,6 +143,8 @@ int main(int argc, char* argv[])
 
         fprintf(fout,"%0.5f\n", covariance(i, j));
     }
+
+    fclose(fout);
 
 
     std::chrono::steady_clock::duration delta_t
