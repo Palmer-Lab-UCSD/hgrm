@@ -86,10 +86,15 @@ int main(int argc, char* argv[])
     double sum { 0 };
     const double* rowi { nullptr };
     const double* rowj { nullptr };
+    double* rowi_cov { nullptr };
     const size_t k_founders { vcf_data.k_founders() };
     const size_t n_samples { vcf_data.n_samples() };
 
-    fprintf(stdout, "Computing matrix\n");
+    std::chrono::steady_clock::duration delta_t
+        { std::chrono::steady_clock::now() - timer };
+
+    fprintf(stdout, "Computing matrix, elapsed time %lld second(s)\n",
+            std::chrono::duration_cast<std::chrono::seconds>(delta_t).count());
 
     while(vcf_data.load_record(record)) {
 
@@ -97,6 +102,7 @@ int main(int argc, char* argv[])
         for (int i = 0; i < n_samples; i++) {
 
             rowi = &record(i, 0);
+            rowi_cov = &covariance(i, 0);
 
             for (int j = i; j < n_samples; j++) {
 
@@ -106,15 +112,17 @@ int main(int argc, char* argv[])
                 for (int k = 0; k < k_founders; k++)
                     sum += rowi[k] * rowj[k];
 
-                covariance(i, j) += sum;
-
-                if (i != j)
-                    covariance(j, i) += sum;
+                rowi_cov[j] += sum;
             }
         }
 
-        if (m_markers % MARKER_PRINT_INTERVAL == 0)
-            fprintf(stdout, "Completed %zu marker loci\n", m_markers);
+        if (m_markers % MARKER_PRINT_INTERVAL == 0) {
+            delta_t = std::chrono::steady_clock::now() - timer;
+
+            fprintf(stdout, "Completed %zu marker loci, elapsed time %lld second(s)\n",
+                    m_markers,
+                    std::chrono::duration_cast<std::chrono::seconds>(delta_t).count());
+        }
 
         m_markers++;
 
@@ -128,7 +136,10 @@ int main(int argc, char* argv[])
         if ((fout = fopen(filename_output, "w")) == nullptr)
             throw std::runtime_error("Error in opening file for writing.");
 
-        fprintf(stdout, "Writing results to file %s\n", filename_output);
+        delta_t = std::chrono::steady_clock::now() - timer;
+        fprintf(stdout, "Writing results to file %s, elapsed time %lld second(s)\n",
+                filename_output,
+                std::chrono::duration_cast<std::chrono::seconds>(delta_t).count());
 
     } else if (argc == 3 && filename_output == nullptr)
         throw std::runtime_error("Output filename is not specified");
@@ -138,8 +149,13 @@ int main(int argc, char* argv[])
     size_t j { 0 };
     for (i = 0; i < n_samples; i++) {
 
-        for (j = 0; j < n_samples-1; j++)
-            fprintf(fout, "%0.5f,", covariance(i,j));
+        for (j = 0; j < n_samples-1; j++) {
+            if (j < i)
+                fprintf(fout, "%0.5f,", covariance(j,i));
+            else
+                fprintf(fout, "%0.5f,", covariance(i,j));
+
+        }
 
         fprintf(fout,"%0.5f\n", covariance(i, j));
     }
@@ -147,10 +163,9 @@ int main(int argc, char* argv[])
     fclose(fout);
 
 
-    std::chrono::steady_clock::duration delta_t
-        { std::chrono::steady_clock::now() - timer };
+    delta_t = std::chrono::steady_clock::now() - timer;
 
-    fprintf(stdout, "Elapsed time: %lld seconds\n",
+    fprintf(stdout, "Done, elapsed time %lld second(s)\n",
             std::chrono::duration_cast<std::chrono::seconds>(delta_t).count());
 
     return 0;
