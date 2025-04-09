@@ -21,25 +21,57 @@
 // reviewed by Claude Sonnet, the AI assistant from Anthropic
 // (Jan 2025), with minor recommendations incorporated.
 //
-#include <iostream>
-#include <fstream>
-#include <string>
+#include <cstdio>
+#include <chrono>
 #include "HaplotypeVcfParser.h"
 
 
 
 int BLOCK_SIZE { 64 };
+size_t MARKER_PRINT_INTERVAL { 1000 };
+char HELP_LONG_FLAG[] { "--help" };
+char HELP_SHORT_FLAG[] { "-h" };
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2)
-        throw("Must specify vcf");
+
+    if (argc != 2 && argc != 3)
+        throw std::runtime_error("Must specify vcf");
+
+    if (argc == 2 
+            && (strcmp(argv[1], HELP_SHORT_FLAG) == 0
+                || strcmp(argv[1], HELP_LONG_FLAG) == 0)) {
+        printf("hgrm - Compute GRM from expected haplotype counts.\n"
+               "Usage\n"
+               "\n"
+               "  hgrm <input_vcf_filename> [<output_matrix_filename>]\n"
+               "\n"
+               "Options\n"
+               "  output_matrix_filename   Filename to print covariance matrix\n"
+               "\n"
+               "Description\n"
+               "  A program to compute a genetic relationship matrix from a vcf\n"
+               "  with expected haplotype counts record per sample per locus.\n");
+
+
+        return 0;
+    }
+
+    char* filename_input { argv[1] };
+    char* filename_output { nullptr };
+
+    if(argc == 3)
+        filename_output = argv[2];
+
+
+    const std::chrono::time_point timer
+    { std::chrono::steady_clock::now() };
+
+
+    fprintf(stdout, "Allocating memory\n");
 
     // open VCF file and parse meta data and header
-    HaplotypeVcfParser vcf_data { argv[1], 100000 };
-
-
-    int n_blocks { 1 + static_cast<int>(vcf_data.n_samples() / BLOCK_SIZE) };
+    HaplotypeVcfParser vcf_data { filename_input, 100000 };
 
 
     // instantiate matrices to hold calculations
@@ -56,6 +88,8 @@ int main(int argc, char* argv[])
     const double* rowj { nullptr };
     const size_t k_founders { vcf_data.k_founders() };
     const size_t n_samples { vcf_data.n_samples() };
+
+    fprintf(stdout, "Computing matrix\n");
 
     while(vcf_data.load_record(record)) {
 
@@ -79,17 +113,45 @@ int main(int argc, char* argv[])
             }
         }
 
+        if (m_markers % MARKER_PRINT_INTERVAL == 0)
+            fprintf(stdout, "Completed %zu marker loci\n", m_markers);
+
+        m_markers++;
+
     }
 
 
-    int i { 0 };
-    int j { 0 };
+    FILE* fout = stdout;
+
+    if (argc == 3 && filename_output != nullptr) {
+
+        if ((fout = fopen(filename_output, "w")) == nullptr)
+            throw std::runtime_error("Error in opening file for writing.");
+
+        fprintf(stdout, "Writing results to file %s\n", filename_output);
+
+    } else if (argc == 3 && filename_output == nullptr)
+        throw std::runtime_error("Output filename is not specified");
+
+
+    size_t i { 0 };
+    size_t j { 0 };
     for (i = 0; i < n_samples; i++) {
 
         for (j = 0; j < n_samples-1; j++)
-            std::cout << covariance(i, j) << ",";
+            fprintf(fout, "%0.5f,", covariance(i,j));
 
-        std::cout << covariance(i,j) << std::endl;
+        fprintf(fout,"%0.5f\n", covariance(i, j));
     }
+
+    fclose(fout);
+
+
+    std::chrono::steady_clock::duration delta_t
+        { std::chrono::steady_clock::now() - timer };
+
+    fprintf(stdout, "Elapsed time: %lld seconds\n",
+            std::chrono::duration_cast<std::chrono::seconds>(delta_t).count());
+
     return 0;
 }
