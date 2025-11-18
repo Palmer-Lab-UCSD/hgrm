@@ -13,14 +13,14 @@
 //
 //
 
-#include "Matrix.h"
+#include <matrix.h>
 
 // default constructor
 Matrix::Matrix(size_t nrow, size_t mcol)
     : nrow_(nrow), mcol_(mcol), 
     data_(nrow_ > 0 &&  mcol_ > 0 ? std::make_unique<double[]>(size()) : nullptr) {
     
-        if (nrow_ <= 0 || mcol_ <= 0)
+        if (nrow_ == 0 || mcol_ == 0)
             throw std::runtime_error("Matrix must have minimum size of 1");
 
         // set default values to zero
@@ -40,7 +40,7 @@ Matrix::Matrix(const Matrix& other)
             data_[i] = other.data_[i];
 }
 
-
+// TODO: check this.
 Matrix::Matrix(Matrix&& other) 
     : nrow_(other.nrow_), mcol_(other.mcol_), data_(std::move(other.data_)) {};
 
