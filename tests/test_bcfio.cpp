@@ -1,16 +1,223 @@
 
 #include <gtest/gtest.h>
+
+namespace htslib {
+extern "C" {
+#include <htslib/hts.h>
+#include <htslib/vcf.h>
+}
+}
+
 #include <bcfio.h>
 
 
 char VCF_NAME[] { "build/geno_test_data.vcf" };
+char VCFGZ_NAME[] { "build/geno_test_data.vcf.gz" };
+char BCF_NAME[] { "build/geno_test_data.bcf" };
+size_t K_FOUNDERS = 8;
+size_t N_SAMPS = 11;
 
 
-TEST(TestHaplotypeVCFParser, Constructor) {
-    ReadBcf vcf { VCF_NAME, "" };
-    printf("K founders %lu\n", vcf.k_founders());
-    // EXPECT_EQ(vcf.n_samples(), 11);
-    // EXPECT_EQ(vcf.k_founders(), 8);
+TEST(TestBcfHeader, ConstructorVcfHdr) {
+    htslib::htsFile *fid = htslib::hts_open(VCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_FALSE(hdr.isnull());
+
+    bcfio::BcfHdrAttr attr {};
+
+    int status = hdr.get_format("HD", &attr);
+    EXPECT_EQ(status, 0);
+    EXPECT_EQ(attr.number, K_FOUNDERS);
+    EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
+    EXPECT_EQ(attr.type, BCF_HT_REAL);
+
+    if (fid) htslib::hts_close(fid);
+}
+
+TEST(TestBcfHeader, ConstructorVcfGzHdr) {
+    htslib::htsFile *fid = htslib::hts_open(VCFGZ_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_FALSE(hdr.isnull());
+
+    bcfio::BcfHdrAttr attr {};
+
+    int status = hdr.get_format("HD", &attr);
+    EXPECT_EQ(status, 0);
+    EXPECT_EQ(attr.number, K_FOUNDERS);
+    EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
+    EXPECT_EQ(attr.type, BCF_HT_REAL);
+
+    if (fid) htslib::hts_close(fid);
+}
+
+TEST(TestBcfHeader, ConstructorBcfHdr) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_FALSE(hdr.isnull());
+    
+    bcfio::BcfHdrAttr attr {};
+
+    int status = hdr.get_format("HD", &attr);
+    EXPECT_EQ(status, 0);
+    EXPECT_EQ(attr.number, K_FOUNDERS);
+    EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
+    EXPECT_EQ(attr.type, BCF_HT_REAL);
+
+    if (fid) htslib::hts_close(fid);
+}
+
+
+TEST(TestBcfHeader, BcfHdrFmtGt) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_FALSE(hdr.isnull());
+    
+    bcfio::BcfHdrAttr attr {};
+
+    int status = hdr.get_format("GT", &attr);
+    EXPECT_EQ(status, 0);
+    EXPECT_EQ(attr.number, 1);
+    EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
+    EXPECT_EQ(attr.type, BCF_HT_STR);
+
+    if (fid) htslib::hts_close(fid);
+}
+
+
+TEST(TestBcfHeader, BcfHdrFmtGp) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_FALSE(hdr.isnull());
+    
+    bcfio::BcfHdrAttr attr {};
+
+    int status = hdr.get_format("GP", &attr);
+    EXPECT_EQ(status, 0);
+    EXPECT_EQ(attr.number, 3);
+    EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
+    EXPECT_EQ(attr.type, BCF_HT_REAL);
+
+    if (fid) htslib::hts_close(fid);
+}
+
+TEST(TestBcfHeader, BcfHdrFmtDs) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_FALSE(hdr.isnull());
+    
+    bcfio::BcfHdrAttr attr {};
+
+    int status = hdr.get_format("DS", &attr);
+    EXPECT_EQ(status, 0);
+    EXPECT_EQ(attr.number, 1);
+    EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
+    EXPECT_EQ(attr.type, BCF_HT_REAL);
+
+    if (fid) htslib::hts_close(fid);
+}
+
+
+TEST(TestBcfHeader, BcfHdrFmtErr) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_FALSE(hdr.isnull());
+    
+    bcfio::BcfHdrAttr attr {};
+
+    int status = hdr.get_format("DOESNOTEXIST", &attr);
+    EXPECT_NE(status, 0);
+
+    if (fid) htslib::hts_close(fid);
+}
+
+
+TEST(TestBcfHeader, BcfHdrFilter) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_FALSE(hdr.isnull());
+    
+    bcfio::BcfHdrAttr attr {};
+
+    int status = hdr.get_filter("PASS", &attr);
+    EXPECT_EQ(status, 0);
+
+    status = hdr.get_filter("PASSING", &attr);
+    EXPECT_NE(status, 0);
+
+    if (fid) htslib::hts_close(fid);
+}
+
+
+TEST(TestBcfHeader, BcfHdrInfoEaf) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_FALSE(hdr.isnull());
+    
+    bcfio::BcfHdrAttr attr {};
+
+    int status = hdr.get_info("EAF", &attr);
+    EXPECT_EQ(status, 0);
+    EXPECT_EQ(attr.type, BCF_HT_REAL);
+    EXPECT_EQ(attr.vl_type, BCF_VL_VAR);
+
+    if (fid) htslib::hts_close(fid);
+}
+
+
+TEST(TestBcfHeader, BcfHdrInfoErc) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_FALSE(hdr.isnull());
+    
+    bcfio::BcfHdrAttr attr {};
+
+    int status = hdr.get_info("ERC", &attr);
+    EXPECT_EQ(status, 0);
+    EXPECT_EQ(attr.type, BCF_HT_REAL);
+    EXPECT_EQ(attr.vl_type, BCF_VL_VAR);
+
+    if (fid) htslib::hts_close(fid);
+}
+
+
+TEST(TestBcfHeader, BcfHdrInfoErr) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_FALSE(hdr.isnull());
+    
+    bcfio::BcfHdrAttr attr {};
+
+    int status = hdr.get_info("NOTAINFOMEMBER", &attr);
+    EXPECT_NE(status, 0);
+
+    if (fid) htslib::hts_close(fid);
+}
+
+TEST(TestBcfHeader, BcfHdrNull) {
+    htslib::htsFile *fid = htslib::hts_open("doesnotexist", "r");
+    bcfio::BcfHeader hdr { fid };
+
+    EXPECT_TRUE(hdr.isnull());
+    if (fid) htslib::hts_close(fid);
+}
+
+
+
+TEST(TestReadBcf, Constructor) {
+    bcfio::ReadBcf bcf { VCF_NAME };
+    EXPECT_EQ(bcf.n_samples(), N_SAMPS);
+    EXPECT_EQ(bcf.k_founders(), K_FOUNDERS);
 }
 
 

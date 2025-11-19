@@ -28,89 +28,29 @@ extern "C" {
 }
 }
 
-
-
 // samples are separated by white space
 const char HAP_CODE[] { "HD" };
-// const char META_PREFIX { '#' };
-// const char MEASUREMENT_DELIM { ':' };
-// const char HAP_DELIM { ',' };
-// const int NUM_VCF_FIELDS { 9 };
-// const char SPACE_DELIM { '\t' };
-// 
-// 
-// // NOTE: in the future it may be best to test for set membership
-// static const char* VCF_FIELD_NAMES[NUM_VCF_FIELDS] {
-//     "#CHROM",
-//     "POS",
-//     "ID",
-//     "REF",
-//     "ALT",
-//     "QUAL",
-//     "FILTER",
-//     "INFO",
-//     "FORMAT"
-// };
-// 
-// 
-// // Move semantics, I don't want to copy data
-// class HaplotypeDataRecord
-// {
-// public:
-// 
-//     HaplotypeDataRecord()=delete;
-//     HaplotypeDataRecord(size_t, size_t);
-//     HaplotypeDataRecord(const HaplotypeDataRecord&)=delete;
-//     HaplotypeDataRecord(HaplotypeDataRecord&&)=delete;
-// 
-// 
-//     const std::string& chrom() const;
-//     const long pos() const;
-//     const std::string& id() const;
-//     const char ref() const;
-//     const char alt() const;
-//     const std::string& qual() const;
-//     const std::string& filter() const;
-//     const std::string& info() const;
-//     const std::string& format() const;
-// 
-//     void parse_vcf_line(const char*);
-//     const double& operator()(size_t, size_t) const;
-// 
-//     std::array<size_t,2> dims() const;
-// 
-// 
-// private:
-//     size_t n_samples_;
-//     size_t k_founders_;
-// 
-//     std::string chrom_ { "" };
-//     long pos_ { -1 };
-//     std::string id_ { "" };
-//     char ref_ { '\0' };
-//     char alt_ { '\0' };
-//     std::string qual_ { "" };
-//     std::string filter_ { "" };
-//     std::string info_ { "" };
-//     std::string format_ { "" };
-// 
-//     std::unique_ptr<Matrix> samples_ { nullptr };
-// 
-//     StringRecord line_parse_ { SPACE_DELIM };
-//     StringRecord field_parse_ { MEASUREMENT_DELIM };
-//     StringRecord hap_parse_ { HAP_DELIM };
-// };
 
-
-struct BcfHeaderFmt {
+namespace bcfio {
+// @title The meta data on a BCF attribute
+// @description BCF, VCF, and VCF.GZ files hold metadata in the header that
+//     specify the type and format of data in records.  I call each unique
+//     piece of data in a record a record attribute, e.g. an INFO column or 
+//     FORMAT column of a record are attributes of that record.  HTSLIB encodes
+//     attribute information an unsigned 64 bit integer, and to access any value
+//     one needs to correctly implement bit shifting and masking.  This struct 
+//     contains bit-fields representing each value stored in the uint64_t.
+//
+struct BcfHdrAttr {
     uint64_t number : 20;
-    uint64_t v : 4;
+    uint64_t vl_type : 4;
     uint64_t type : 4;
     uint64_t coltype : 4;
 };
 
 
-struct BcfHeader {
+class BcfHeader {
+public:
     htslib::bcf_hdr_t *hdr;
     
     BcfHeader(htslib::htsFile *fid): 
@@ -120,7 +60,14 @@ struct BcfHeader {
     const bool isnull() const { return hdr == nullptr; };
 
     // sample_names()
-    int get_format(const std::string& name, BcfHeaderFmt *b) const;
+    const int get_format(const char *name, BcfHdrAttr *ptr) const;
+    const int get_info(const char *name, BcfHdrAttr *ptr) const;
+    const int get_filter(const char *name, BcfHdrAttr *ptr) const;
+
+private:
+    const int decode_hts_idinfo_(const char *name, 
+            const int bcf_dt_type, 
+            BcfHdrAttr *ptr) const;
 };
 
 
@@ -130,6 +77,7 @@ class ReadBcf
 {
 public:
     // HaplotypeVcfParser(const char* variant_fname);
+    ReadBcf(const char *variant_fname);
     ReadBcf(const char *variant_fname, const char *sample_fname);
     // HaplotypeVcfParser(const std::string& variant_fname);
     // HaplotypeVcfParser(const std::string& variant_fname,
@@ -162,5 +110,6 @@ private:
     // size_t get_line_num_char_();
     // void set_params_();
 };
+}
 
 #endif
