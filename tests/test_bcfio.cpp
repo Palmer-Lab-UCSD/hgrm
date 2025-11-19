@@ -1,5 +1,8 @@
 
 #include <gtest/gtest.h>
+#include <memory>
+#include <string>
+#include <cstdio>
 
 namespace htslib {
 extern "C" {
@@ -220,7 +223,46 @@ TEST(TestReadBcf, Constructor) {
     EXPECT_EQ(bcf.k_founders(), K_FOUNDERS);
 }
 
+TEST(TestReadBcf, VcfSampNames) {
+    bcfio::ReadBcf bcf { VCF_NAME };
 
+    std::unique_ptr<std::string[]> s = bcf.sample_names();
+
+    char samp_name[] = "S01";
+
+    for (int i = 0; i < bcf.n_samples(); i++) {
+        snprintf(samp_name, 4, "S%02d", i+1);
+        EXPECT_STREQ(s[i].c_str(), samp_name);
+    }
+}
+
+
+TEST(TestReadBcf, VcfGzSampNames) {
+    bcfio::ReadBcf bcf { VCFGZ_NAME };
+
+    std::unique_ptr<std::string[]> s = bcf.sample_names();
+
+    char samp_name[] = "S01";
+
+    for (int i = 0; i < bcf.n_samples(); i++) {
+        snprintf(samp_name, 4, "S%02d", i+1);
+        EXPECT_STREQ(s[i].c_str(), samp_name);
+    }
+}
+
+
+TEST(TestReadBcf, BcfSampNames) {
+    bcfio::ReadBcf bcf { BCF_NAME };
+
+    std::unique_ptr<std::string[]> s = bcf.sample_names();
+
+    char samp_name[] = "S01";
+
+    for (int i = 0; i < bcf.n_samples(); i++) {
+        snprintf(samp_name, 4, "S%02d", i+1);
+        EXPECT_STREQ(s[i].c_str(), samp_name);
+    }
+}
 // TEST(TestHaplotypeVCFParser, LoadRecord) {
 // 
 //     HaplotypeVcfParser vcf { VCF_NAME };

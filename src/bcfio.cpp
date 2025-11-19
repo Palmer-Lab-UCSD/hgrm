@@ -52,6 +52,7 @@ bcfio::ReadBcf::ReadBcf(const char *variant_fname)
     hdr_(fid_) {};
 
 
+// TODO: subset samples by those in sample_fname file
 bcfio::ReadBcf::ReadBcf(const char *variant_fname, const char *sample_fname)
     : fname_(variant_fname),
     fid_(htslib::hts_open(variant_fname, "r")),
@@ -100,3 +101,13 @@ const size_t bcfio::ReadBcf::k_founders() const {
     return static_cast<size_t>(fmt.number);
 }
 
+std::unique_ptr<std::string[]> bcfio::ReadBcf::sample_names() const {
+
+    std::unique_ptr<std::string[]> samp_names = 
+        std::make_unique<std::string[]>(n_samples()); 
+
+    for (int i = 0; i < n_samples(); i++)
+        samp_names[i] = std::string(*(hdr_.hdr->samples + i));
+
+    return samp_names;
+}

@@ -92,6 +92,7 @@ public:
 
     const size_t n_samples() const;
     const size_t k_founders() const;
+    std::unique_ptr<std::string[]> sample_names() const;
 
     // bool load_record(HaplotypeDataRecord&);
 
