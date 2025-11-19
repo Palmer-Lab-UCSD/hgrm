@@ -53,7 +53,7 @@ CXXLDFLAGS = $(addprefix -I, $(CXXLD))
 CXXLIB += $(LOCAL_LIB)
 CXXLIBFLAGS = $(addprefix -L, $(CXXLIB))
 
-APP_FILES = matrix.cpp parse_hts.cpp
+APP_FILES = matrix.cpp bcfio.cpp
 APP_SRC = $(addprefix $(SRC_DIR)/, $(APP_FILES))
 APP_OBJS = $(addprefix $(BUILD_DIR)/, $(APP_FILES:.cpp=.o))
 APP_DEPS = $(APP_OBJS:.o=.d)
@@ -63,7 +63,8 @@ TEST_DIR = tests
 TEST_SRC = $(wildcard $(TEST_DIR)/test_*.cpp)
 TEST_OBJS = $(subst $(TEST_DIR), $(BUILD_DIR), $(TEST_SRC:.cpp=.o))
 TEST_DEPS = $(TEST_OBJS:.o=.d)
-TEST_DATA = $(wildcard $(TEST_DIR)/geno_test_data.*)
+TEST_DATA_SRC = $(wildcard $(TEST_DIR)/geno_test_data.*)
+TEST_DATA_DST = $(subst $(TEST_DIR), $(BUILD_DIR), $(TEST_DATA_SRC))
 TEST_TARGET_PRG = $(BUILD_DIR)/runtests
 
 
@@ -92,16 +93,16 @@ $(BUILD_DIR):
 ######################################################################
 
 
-$(TEST_TARGET_PRG): $(TEST_DIR)/main.cpp $(TEST_OBJS) | $(TARGET)
-	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^ -lgtest
+$(TEST_TARGET_PRG): $(TEST_DIR)/main.cpp $(TEST_OBJS) $(APP_OBJS) | $(TARGET)
+	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^ -lgtest -lhts
 
 $(BUILD_DIR)/test_%.o: $(TEST_DIR)/test_%.cpp
 	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(OBJ_OUTPUT_OPTIONS) $<
 
+data: | $(TEST_DATA_DST)
 
-.PHONY: data
-data: $(TEST_DATA)
-	rsync -avz $^ $(BUILD_DIR)/
+$(BUILD_DIR)/geno_test_data%: $(TEST_DIR)/geno_test_data%
+	rsync -avz $< $(BUILD_DIR)/
 
 # tests: $(BUILD_DIR)/test_log #$(BUILD_DIR)/test_argparse
 # 
@@ -125,6 +126,13 @@ data: $(TEST_DATA)
 
 # $(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) $(OBJ_OUTPUT_OPTIONS) $^
 
+
+######################################################################
+# 
+######################################################################
+
+check:
+	./$(TEST_TARGET_PRG)
 
 ######################################################################
 # 

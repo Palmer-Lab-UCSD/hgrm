@@ -1,14 +1,14 @@
 
 #include <gtest/gtest.h>
-#include <parse_hts.h>
+#include <bcfio.h>
 
 
-char VCF_NAME[] { "geno_test_data.vcf" };
+char VCF_NAME[] { "build/geno_test_data.vcf" };
 
 
 TEST(TestHaplotypeVCFParser, Constructor) {
-    ParseHtsVariantFile vcf { VCF_NAME, "" };
-    
+    ReadBcf vcf { VCF_NAME, "" };
+    printf("K founders %lu\n", vcf.k_founders());
     // EXPECT_EQ(vcf.n_samples(), 11);
     // EXPECT_EQ(vcf.k_founders(), 8);
 }

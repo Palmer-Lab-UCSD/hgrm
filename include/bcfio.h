@@ -101,32 +101,56 @@ const char HAP_CODE[] { "HD" };
 //     StringRecord hap_parse_ { HAP_DELIM };
 // };
 
+
+struct BcfHeaderFmt {
+    uint64_t number : 20;
+    uint64_t v : 4;
+    uint64_t type : 4;
+    uint64_t coltype : 4;
+};
+
+
+struct BcfHeader {
+    htslib::bcf_hdr_t *hdr;
+    
+    BcfHeader(htslib::htsFile *fid): 
+        hdr(fid ? htslib::bcf_hdr_read(fid) : nullptr) {};
+    ~BcfHeader() { if (hdr) htslib::bcf_hdr_destroy(hdr); };
+
+    const bool isnull() const { return hdr == nullptr; };
+
+    // sample_names()
+    int get_format(const std::string& name, BcfHeaderFmt *b) const;
+};
+
+
+
 // Interface with htslib bcf tools
-class ParseHtsVariantFile
+class ReadBcf
 {
 public:
     // HaplotypeVcfParser(const char* variant_fname);
-    ParseHtsVariantFile(const char *variant_fname, const char *sample_fname);
+    ReadBcf(const char *variant_fname, const char *sample_fname);
     // HaplotypeVcfParser(const std::string& variant_fname);
     // HaplotypeVcfParser(const std::string& variant_fname,
     //        const std::string& sample_fname);
 
-    ParseHtsVariantFile()=delete; 
-    ParseHtsVariantFile(const ParseHtsVariantFile&)=delete;
-    ParseHtsVariantFile(const ParseHtsVariantFile&&)=delete;
+    ReadBcf()=delete; 
+    ReadBcf(const ReadBcf&)=delete;
+    ReadBcf(const ReadBcf&&)=delete;
     // HaplotypeVcfParser& operator=(const HaplotypeVcfParser&)=delete;
 
-    ~ParseHtsVariantFile();
+    ~ReadBcf();
 
-    // size_t n_samples() const;
-    // size_t k_founders() const;
+    const size_t n_samples() const;
+    const size_t k_founders() const;
 
     // bool load_record(HaplotypeDataRecord&);
 
 private:
     const std::string fname_;
     htslib::htsFile *fid_;
-    htslib::bcf_hdr_t *hdr_;
+    BcfHeader hdr_;
 
     // size_t n_cols_ { 0 };
     // size_t n_samples_ { 0 };

@@ -13,17 +13,30 @@
 // reviewed by Claude Sonnnet, the AI assistant from Anthropic
 // (Jan 2025), with minor recommendations incorporated.
 
-#include <parse_hts.h>
+#include <bcfio.h>
 #include <cstdlib>
 
 // const static size_t DEFAULT_BUFFER_SIZE { 100000 };
 
+int BcfHeader::get_format(const std::string& name, BcfHeaderFmt *b) const {
+    int idx = htslib::bcf_hdr_id2int(hdr, BCF_DT_ID, name.c_str());
+    if (idx < 0)
+        return -1;
 
-ParseHtsVariantFile::ParseHtsVariantFile(const char *variant_fname,
-        const char *sample_fname)
+    b->number = hdr->id[BCF_DT_ID][idx].val->info[BCF_HL_FMT]>>12;
+    b->v = hdr->id[BCF_DT_ID][idx].val->info[BCF_HL_FMT]>>8 & 0b1111;
+    b->type = hdr->id[BCF_DT_ID][idx].val->info[BCF_HL_FMT]>>4 & 0b1111;
+    b->coltype = hdr->id[BCF_DT_ID][idx].val->info[BCF_HL_FMT] & 0b1111;
+
+    return 0;
+}
+
+
+
+ReadBcf::ReadBcf(const char *variant_fname, const char *sample_fname)
     : fname_(variant_fname),
     fid_(htslib::hts_open(variant_fname, "r")),
-    hdr_(htslib::bcf_hdr_read(fid_)) {
+    hdr_(fid_) {
 
     int status { 0 };
     // Subset samples with those found in the file sample_fname 
@@ -31,7 +44,7 @@ ParseHtsVariantFile::ParseHtsVariantFile(const char *variant_fname,
         fprintf(stdout, "No file with sample names detected, computing"
                 "hGRM over all samples.\n");
     else
-        status = htslib::bcf_hdr_set_samples(hdr_, sample_fname, 1);
+        status = htslib::bcf_hdr_set_samples(hdr_.hdr, sample_fname, 1);
 
     if (status < 0) {
         fprintf(stderr, "Error: Couldn't read sample file\n");
@@ -46,12 +59,24 @@ ParseHtsVariantFile::ParseHtsVariantFile(const char *variant_fname,
     // get number of characters in data record for line buffer size
 };
 
-ParseHtsVariantFile::~ParseHtsVariantFile() {
+ReadBcf::~ReadBcf() {
     if (fid_)
         htslib::hts_close(fid_);
-    if (hdr_)
-        htslib::bcf_hdr_destroy(hdr_);
+}
 
+const size_t ReadBcf::n_samples() const {
+    // See htslib/vcf.h line 649
+    // Remember that n is the number of entries in the triplet of 
+    // dictionaries in the VCF.  BCF_DT_SAMPLE, provides the index of n
+    // that correspondes to the number of samples.
+    return hdr_.hdr->n[BCF_DT_SAMPLE];
+};
+
+const size_t ReadBcf::k_founders() const {
+    std::unique_ptr<BcfHeaderFmt> hapvals = std::make_unique<BcfHeaderFmt>();
+    if (hdr_.get_format("HD", hapvals.get()) < 0)
+        printf("errror\n");
+    return static_cast<size_t>(hapvals->number);
 }
 
 // ParseHtsVariantFile::ParseHtsVariantFile(char* filename, size_t buff_size)
