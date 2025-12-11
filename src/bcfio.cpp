@@ -46,16 +46,16 @@ const int bcfio::BcfHeader::get_filter(const char *name, BcfHdrAttr *ptr) const 
 }
 
 
-bcfio::ReadBcf::ReadBcf(const char *variant_fname)
-    : fname_(variant_fname),
-    fid_(htslib::hts_open(variant_fname, "r")),
+bcfio::ReadBcf::ReadBcf(const char *bcfname)
+    : fname_(bcfname),
+    fid_(htslib::hts_open(bcfname, "r")),
     hdr_(fid_) {};
 
 
 // TODO: subset samples by those in sample_fname file
-bcfio::ReadBcf::ReadBcf(const char *variant_fname, const char *sample_fname)
-    : fname_(variant_fname),
-    fid_(htslib::hts_open(variant_fname, "r")),
+bcfio::ReadBcf::ReadBcf(const char *bcfname, const char *sample_fname)
+    : fname_(bcfname),
+    fid_(htslib::hts_open(bcfname, "r")),
     hdr_(fid_) {
 
     int status { 0 };
@@ -101,6 +101,7 @@ const size_t bcfio::ReadBcf::k_founders() const {
     return static_cast<size_t>(fmt.number);
 }
 
+// Note: May be better to just return a reference?
 std::unique_ptr<std::string[]> bcfio::ReadBcf::sample_names() const {
 
     std::unique_ptr<std::string[]> samp_names = 
@@ -110,4 +111,13 @@ std::unique_ptr<std::string[]> bcfio::ReadBcf::sample_names() const {
         samp_names[i] = std::string(*(hdr_.hdr->samples + i));
 
     return samp_names;
+}
+
+
+int bcfio::ReadBcf::next_record(bcfio::BcfRecord *ptr) {
+    int status = htslib::bcf_read(fid_, hdr_.hdr, ptr->rec);
+    if (status != 0)
+        return status;
+
+    return htslib::bcf_unpack(ptr->rec, BCF_UN_ALL);
 }

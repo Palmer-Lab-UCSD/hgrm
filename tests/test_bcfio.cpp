@@ -263,6 +263,8 @@ TEST(TestReadBcf, BcfSampNames) {
         EXPECT_STREQ(s[i].c_str(), samp_name);
     }
 }
+
+
 // TEST(TestHaplotypeVCFParser, LoadRecord) {
 // 
 //     HaplotypeVcfParser vcf { VCF_NAME };

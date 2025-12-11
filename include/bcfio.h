@@ -1,7 +1,5 @@
 // Parse STITCH vcf file
 //
-//
-//
 // By: Robert Vogel
 // Affiliation: Palmer Lab at UCSD
 // Date: 2025-01-09
@@ -9,9 +7,6 @@
 //
 // Acknowledgment
 //
-// Code design and original version completed by Robert Vogel,
-// reviewed by Claude Sonnet, the AI assistant from Anthropic
-// (Jan 2025), with minor recommendations incorporated.
 //
 #ifndef HEADER_PARSE_HTS_H
 #define HEADER_PARSE_HTS_H
@@ -29,7 +24,7 @@ extern "C" {
 }
 
 // samples are separated by white space
-const char HAP_CODE[] { "HD" };
+// const char HAP_CODE[] { "HD" };
 
 namespace bcfio {
 // @title The meta data on a BCF attribute
@@ -41,12 +36,7 @@ namespace bcfio {
 //     one needs to correctly implement bit shifting and masking.  This struct 
 //     contains bit-fields representing each value stored in the uint64_t.
 //
-struct BcfHdrAttr {
-    uint64_t number : 20;
-    uint64_t vl_type : 4;
-    uint64_t type : 4;
-    uint64_t coltype : 4;
-};
+struct BcfHdrAttr { uint64_t number : 20, vl_type : 4, type : 4, coltype : 4; };
 
 
 class BcfHeader {
@@ -71,14 +61,32 @@ private:
 };
 
 
+// @title Manage bcf record
+// @description Manage the lifetime of a htslib::bcf1_t type record using 
+//      htslib functions with RAII.  Provide some a simpler interface to
+//      quantities of interest
+struct BcfRecord {
+    BcfRecord(): rec(htslib::bcf_init()) {};
+    ~BcfRecord() { if (rec) htslib::bcf_destroy(rec); };
 
-// Interface with htslib bcf tools
+    bool is_snp() const { return htslib::bcf_is_snp(rec); }
+    htslib::bcf1_t *rec;
+};
+
+
+// @title Interface with htslib bcf tools
+// @description ReadBCF manages the lifetime of an open htslib file
+//      and organizes the bcf file header and any one record for easy
+//      and memory safe parsing.
+// @param bcfname: the path and filename to the bcf file to be read.
+// @param sample_fname: the path and filename of the text file listing the
+//      samples id's of records to be retreived.  If this is not included
+//      all sample records are retrieved.
 class ReadBcf
 {
 public:
-    // HaplotypeVcfParser(const char* variant_fname);
-    ReadBcf(const char *variant_fname);
-    ReadBcf(const char *variant_fname, const char *sample_fname);
+    ReadBcf(const char *bcfname);
+    ReadBcf(const char *bcfname, const char *sample_fname);
     // HaplotypeVcfParser(const std::string& variant_fname);
     // HaplotypeVcfParser(const std::string& variant_fname,
     //        const std::string& sample_fname);
@@ -101,11 +109,8 @@ private:
     htslib::htsFile *fid_;
     BcfHeader hdr_;
 
-    // size_t n_cols_ { 0 };
-    // size_t n_samples_ { 0 };
-    // size_t k_founders_ { 0 };
+    int next_record(BcfRecord *rec);
     // size_t fpos_record_one_ { 0 };
-
 
     // void pos_(size_t);
     // size_t get_line_num_char_();
