@@ -28,6 +28,13 @@
 #include <optional>
 #include <string>
 
+#include <calc.h>
+
+
+#define FAILED_CALC -1
+#define SUCCESS_CALC 0
+
+
 
 size_t MARKER_PRINT_INTERVAL { 1000 };
 char HELP_LONG_FLAG[] { "--help" };
@@ -47,16 +54,25 @@ int main(int argc, char* argv[])
         "as a text file in the variant call format (VCF)."
     };
 
+    parser.add_arg("-o", 
+            argparse::ArgType::STRING,
+            "the path and filename that the resulting haplotype genetic"
+            "relationship matrix is printed.");
+
     parser.add_arg("--sample_names",
             argparse::ArgType::STRING,
             "The path and name of the file containing sample names to be"
             " included in computing the relationship matrix.  The file must"
             " include a single sample filename, and if necessary file system"
             " path, per line.");
-    parser.add_arg("-o", 
-            argparse::ArgType::STRING,
-            "the path and filename that the resulting haplotype genetic"
-            "relationship matrix is printed.");
+
+    parser.add_arg("--use_genotypes",
+            argparse::ArgType::BOOLEAN,
+            "Use sample genotypes to compute the relationship matrix");
+    parser.add_arg("--use_both",
+            argparse::ArgType::BOOLEAN,
+            "Use both genotypes and haplotypes to compute relationship matrix");
+
     parser.add_arg("vcf",
             argparse::ArgType::STRING, 
             "the path and filename of the vcf in which the hgrm is computed.");
@@ -66,28 +82,48 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    std::optional<std::string> tmp {};
-    if((tmp = parser.get<std::string>("vcf")) == std::nullopt) {
+    std::optional<std::string> tmp_str {};
+    if((tmp_str = parser.get<std::string>("vcf")) == std::nullopt) {
         fprintf(stderr, "Error retrieving vcf name");
         exit(EXIT_FAILURE);
     }
-    std::string vcf_fname { tmp.value() };
+    std::string vcf_fname { tmp_str.value() };
 
-    if ((tmp = parser.get<std::string>("o")) == std::nullopt) {
+    if ((tmp_str = parser.get<std::string>("o")) == std::nullopt) {
         fprintf(stderr, "Error retrieving output name");
         exit(EXIT_FAILURE);
     }
-    std::string out_fname { tmp.value() };
+    std::string out_fname { tmp_str.value() };
 
     if (out_fname.size() == 0)
         out_fname = vcf_fname + ".mat";
 
-    std::string samp_fname {};
-    if ((tmp = parser.get<std::string>("sample_names")) == std::nullopt) {
+    if ((tmp_str = parser.get<std::string>("sample_names")) == std::nullopt) {
         fprintf(stderr, "Error retrieving sample_names file.\n");
         exit(EXIT_FAILURE);
     }
-    samp_fname = tmp.value();
+    std::string samp_fname { tmp_str.value() };
+
+    
+    std::optional<bool> tmp_bool {};
+    if ((tmp_bool = parser.get<bool>("use_genotypes")) == std::nullopt) {
+        fprintf(stderr, "Error retrieving relationship matrix type.\n");
+        exit(EXIT_FAILURE);
+    }
+    bool use_genotypes { tmp_bool.value() };
+
+    if ((tmp_bool = parser.get<bool>("use_both")) == std::nullopt) {
+        fprintf(stderr, "Error retrieving relationship matrix type.\n");
+        exit(EXIT_FAILURE);
+    }
+    bool use_both { tmp_bool.value() };
+
+    if (use_genotypes && use_both) {
+        fprintf(stderr, "user must specify either use_genotypes, use_both,"
+                " or omit both options to compute the haplotype based"
+                " relationship matrix.");
+        exit(EXIT_FAILURE);
+    }
 
 
     fprintf(stdout, "BCF/VCF file name: %s\n", vcf_fname.c_str());
@@ -95,14 +131,33 @@ int main(int argc, char* argv[])
         fprintf(stdout, "Sample file: None, use all samples\n");
     else
         fprintf(stdout, "Sample file: %s\n", samp_fname.c_str());
+
     fprintf(stdout, "Output matrix file: %s\n", out_fname.c_str());
+
+
+    int status = FAILED_CALC;
+
+    if (use_genotypes) {
+        fprintf(stdout, "Relationship matrix: genotype\n");
+        status = compute_genotype_matrix();
+    } else if (use_both) {
+        fprintf(stdout, "Relationship matrix: genotype and haplotype\n");
+        status = compute_geno_and_haplo_matrix();
+    } else {
+        fprintf(stdout, "Relationship matrix: haplotype\n");
+        status = compute_haplotype_matrix();
+    }
+
+    if (status == FAILED_CALC)
+        fprintf(stderr, "%s\n", "Computation failed");
+
 
     // const std::chrono::time_point timer;
     // { std::chrono::steady_clock::now() };
     
 //    HaplotypeVcfParser vcf_data { filename_input, 100000 };
 
-    fprintf(stdout, "Allocating memory\n");
+//    fprintf(stdout, "Allocating memory\n");
     // instantiate matrices to hold calculations
 //     Matrix covariance { vcf_data.n_samples(), vcf_data.n_samples() };
 
@@ -203,5 +258,5 @@ int main(int argc, char* argv[])
 //    fprintf(stdout, "Done, elapsed time %lld second(s)\n",
 //            std::chrono::duration_cast<std::chrono::seconds>(delta_t).count());
 //
-    return 0;
+    return status;
 }

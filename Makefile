@@ -45,26 +45,29 @@ SRC_DIR = src
 HEADER_DIR = include
 BUILD_DIR = build
 
-CXXLD += $(PWD)/include
-CXXLD += $(LOCAL_LD)
-
+CXXLD := $(PWD)/include $(LOCAL_LD) $(CXXLD)
 CXXLDFLAGS = $(addprefix -I, $(CXXLD))
 
 CXXLIB += $(LOCAL_LIB)
 CXXLIBFLAGS = $(addprefix -L, $(CXXLIB))
 
-APP_FILES = matrix.cpp bcfio.cpp
-APP_SRC = $(addprefix $(SRC_DIR)/, $(APP_FILES))
-APP_OBJS = $(addprefix $(BUILD_DIR)/, $(APP_FILES:.cpp=.o))
+# APPLICATION FILES
+# APP_FILES = matrix.cpp bcfio.cpp
+APP_SRC = $(filter-out $(SRC_DIR)/main.cpp, $(wildcard $(SRC_DIR)/*.cpp))
+#APP_SRC = $(addprefix $(SRC_DIR)/, $(APP_FILES))
+APP_OBJS = $(subst $(SRC_DIR), $(BUILD_DIR), $(APP_SRC:.cpp=.o))
 APP_DEPS = $(APP_OBJS:.o=.d)
 
-
+# TESTS
 TEST_DIR = tests
 TEST_SRC = $(wildcard $(TEST_DIR)/test_*.cpp)
 TEST_OBJS = $(subst $(TEST_DIR), $(BUILD_DIR), $(TEST_SRC:.cpp=.o))
 TEST_DEPS = $(TEST_OBJS:.o=.d)
+
+
 TEST_DATA_SRC = $(wildcard $(TEST_DIR)/geno_test_data.*)
 TEST_DATA_DST = $(subst $(TEST_DIR), $(BUILD_DIR), $(TEST_DATA_SRC))
+
 TEST_TARGET_PRG = $(BUILD_DIR)/runtests
 
 

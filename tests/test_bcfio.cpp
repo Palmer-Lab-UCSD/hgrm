@@ -208,7 +208,8 @@ TEST(TestBcfHeader, BcfHdrInfoErr) {
 }
 
 TEST(TestBcfHeader, BcfHdrNull) {
-    htslib::htsFile *fid = htslib::hts_open("doesnotexist", "r");
+    // htslib::htsFile *fid = htslib::hts_open("doesnotexist", "r");
+    htslib::htsFile *fid = nullptr;
     bcfio::BcfHeader hdr { fid };
 
     EXPECT_TRUE(hdr.isnull());
