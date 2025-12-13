@@ -42,7 +42,7 @@ int Logger::print_(FILE *stream,
         return -1;
     }
 
-    fprintf(stdout, "%s\t%s\t%s\n", time_buf_, log_type, str_buf_);
+    fprintf(stream, "%s\t%s\t%s\n", time_buf_, log_type, str_buf_);
 
     return 0;
 }

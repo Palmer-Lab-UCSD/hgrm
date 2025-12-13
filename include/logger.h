@@ -8,6 +8,9 @@ class Logger {
 public:
     Logger();
 
+    // TODO: right now only accepts a single msg string, I should make
+    // this arbitrary message elements using va_list, this makes the
+    // interface match that of sprintf
     int info(const char *format, const char *msg);
     int warn(const char *format, const char *msg);
     int error(const char *format, const char *msg);
