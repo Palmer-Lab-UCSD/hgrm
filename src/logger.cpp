@@ -4,26 +4,11 @@
 
 Logger::Logger(): 
     t_(time(nullptr)),
-    time_point_(localtime(&t_)),
-    time_buf_(new char[time_buf_len_]),
-    str_buf_(new char[str_buf_len_]) {
+    time_point_(localtime(&t_)) {
 
-    if (!time_buf_ || !str_buf_) {
-        fprintf(stderr, "logger failure. please notify maintainer");
-        exit(EXIT_FAILURE);
-    }
-
-    for (int i = max_str_; i < str_buf_len_; i++)
-        str_buf_[i] = '\0';
-
-    for (int i = 0; i < time_buf_len_; i++)
-        time_buf_[i] = '\0';
+    std::memset(time_buf_, '\0', time_buf_len_); 
+    std::memset(str_buf_, '\0', str_buf_len_);
 };
-
-Logger::~Logger() { 
-    if (time_buf_) delete[] time_buf_;
-    if (str_buf_) delete[] str_buf_;
-}
 
 int Logger::print_(FILE *stream, 
         const char *log_type, 
@@ -40,7 +25,7 @@ int Logger::print_(FILE *stream,
     time_len_ = strftime(time_buf_, time_buf_len_,"%FT%H:%M:%S", time_point_);
 
     if(time_len_ == 0) {
-        empty_time_buf_();
+        std::memset(time_buf_, '\0', time_buf_len_);
 
         fprintf(stderr, "%s\t%s\t%s\n", time_buf_, 
             err_str_, "logger time buf failure, please notify maintainer.");
@@ -84,13 +69,5 @@ int Logger::warn(const char *msg) {
 
 int Logger::error(const char *msg) {
     return print_(stderr, err_str_, "%s", msg);
-}
-
-void Logger::empty_time_buf_() {
-    int i = 0;
-    for (; i < time_buf_len_; i++)
-        time_buf_[i] = '0';
-
-    time_buf_[i] = '\0';
 }
 
