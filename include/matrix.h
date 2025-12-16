@@ -23,7 +23,7 @@
 class Matrix
 {
 public:
-    Matrix(size_t, size_t);                         // constructorconstructor
+    Matrix(const size_t, const size_t);
     Matrix(const Matrix&);                          // copy constructor
     Matrix(Matrix&&);                               // move constructor
     Matrix& operator=(const Matrix&)=delete;        // copy assignment

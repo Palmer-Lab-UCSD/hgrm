@@ -1,4 +1,7 @@
 
+#ifndef HEADER_LOGGER_H
+#define HEADER_LOGGER_H
+
 #include <cstdlib>
 #include <cstdio>
 #include <ctime>
@@ -40,3 +43,5 @@ private:
     int print_(FILE *stream, const char *log_type, 
             const char *format, const char *msg);
 };
+
+#endif

@@ -221,7 +221,7 @@ TEST(TestBcfHeader, BcfHdrNull) {
 TEST(TestReadBcf, Constructor) {
     bcfio::ReadBcf bcf { VCF_NAME };
     EXPECT_EQ(bcf.n_samples(), N_SAMPS);
-    EXPECT_EQ(bcf.k_founders(), K_FOUNDERS);
+    EXPECT_EQ(bcf.k_haps(), K_FOUNDERS);
 }
 
 TEST(TestReadBcf, VcfSampNames) {
@@ -270,7 +270,7 @@ TEST(TestReadBcf, BcfSampNames) {
 // 
 //     HaplotypeVcfParser vcf { VCF_NAME };
 // 
-//     HaplotypeDataRecord record { vcf.n_samples(), vcf.k_founders() };
+//     HaplotypeDataRecord record { vcf.n_samples(), vcf.k_haps() };
 // 
 //     bool record_loaded { false };
 //     record_loaded = vcf.load_record(record);

@@ -21,6 +21,7 @@
 
 #include <logger.h>
 #include <calc.h>
+#include <matrix.h>
 
 
 #define FAILED_CALC -1
@@ -41,14 +42,14 @@ int main(int argc, char* argv[])
     argparse::ArgParser parser {
         "hgrm: Haplotype Genetic Relationship Matrix",
         "This program computes the haplotype genetic relationship matrix"
-        "from the expected haplotype counts per locus per sample and stored"
-        "as a text file in the variant call format (VCF)."
+        " from the expected haplotype counts per locus per sample and stored"
+        " as a text file in the variant call format (VCF)."
     };
 
     parser.add_arg("-o", 
             argparse::ArgType::STRING,
             "the path and filename that the resulting haplotype genetic"
-            "relationship matrix is printed.");
+            " relationship matrix is printed.");
 
     parser.add_arg("--sample_names",
             argparse::ArgType::STRING,
@@ -60,6 +61,7 @@ int main(int argc, char* argv[])
     parser.add_arg("--use_genotypes",
             argparse::ArgType::BOOLEAN,
             "Use sample genotypes to compute the relationship matrix");
+
     parser.add_arg("--use_both",
             argparse::ArgType::BOOLEAN,
             "Use both genotypes and haplotypes to compute relationship matrix");
@@ -131,6 +133,9 @@ int main(int argc, char* argv[])
 
     int status = FAILED_CALC;
 
+    bcfio::ReadBcf bfid { vcf_fname.c_str() };
+    Matrix cov { bfid.n_samples(), bfid.n_samples() };
+
     if (use_genotypes) {
         log.info("Relationship matrix: genotype");
         status = compute_genotype_matrix();
@@ -139,7 +144,7 @@ int main(int argc, char* argv[])
         status = compute_geno_and_haplo_matrix();
     } else {
         log.info("Relationship matrix: haplotype");
-        status = compute_haplotype_matrix();
+        status = compute_haplotype_matrix(&log, &bfid, &cov);
     }
 
     if (status == FAILED_CALC)

@@ -16,7 +16,7 @@
 #include <matrix.h>
 
 // default constructor
-Matrix::Matrix(size_t nrow, size_t mcol)
+Matrix::Matrix(const size_t nrow, const size_t mcol)
     : nrow_(nrow), mcol_(mcol), 
     data_(nrow_ > 0 &&  mcol_ > 0 ? std::make_unique<double[]>(size()) : nullptr) {
     

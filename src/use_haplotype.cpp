@@ -1,29 +1,44 @@
 
+
 #include <calc.h>
 
-int compute_haplotype_matrix() {
-    return -1;
+int compute_haplotype_matrix(Logger *log, bcfio::ReadBcf *bfid, Matrix *cov) {
+
+    int output_status = -1;
+
+    // instantiate matrices to hold calculations
+    const size_t n_samples { bfid->n_samples() };
+    const size_t k_haps { bfid->k_haps() };
+    
+    size_t idx_row { 0 };
+    // size_t idx_col { 0 };
+    size_t idx_hap { 0 };
+    size_t idx_rec { 0 };
+
+    bcfio::BcfRecord rec {};
+
+    int num = 0;
+    while (bfid->next_record(&rec) == 0) {
+
+        // remember that -> has higher precedence thatn &
+        num = rec.get_fmt(&bfid->hdr, "HD");
+
+        printf("num: %d\n", num);
+        for (idx_row = 0; idx_row < n_samples; idx_row++) {
+            for (idx_hap = 0; idx_hap < k_haps; idx_hap++)
+                printf("%f\t ", rec.dst[idx_row*k_haps + idx_hap]);
+            printf("\n");
+        }
+
+        log->info("Processed %s records",
+                std::to_string(++idx_rec).c_str());
+
+
+    }
+
+    return output_status;
 }
 
-    // const std::chrono::time_point timer;
-    // { std::chrono::steady_clock::now() };
-    
-//    HaplotypeVcfParser vcf_data { filename_input, 100000 };
-
-//    fprintf(stdout, "Allocating memory\n");
-    // instantiate matrices to hold calculations
-//     Matrix covariance { vcf_data.n_samples(), vcf_data.n_samples() };
-
-//
-//    // open VCF file and parse meta data and header
-//    HaplotypeVcfParser vcf_data { filename_input, 100000 };
-//
-//
-
-//    // instantiate record object
-//    HaplotypeDataRecord record { vcf_data.n_samples(), vcf_data.k_founders() };
-//
-//    // analyze each line, i.e. position, in the VCF
 //    size_t m_markers { 1 };
 //
 //    double sum { 0 };

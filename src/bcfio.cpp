@@ -12,12 +12,19 @@
 #include <bcfio.h>
 #include <cstdlib>
 
-// decoder based upon htslib/vcf.h line 100 in the typedef struct bcf_idinfo_t. 
+// @title: 
+// @description decoder based upon htslib/vcf.h line 100 in the typedef
+//      struct bcf_idinfo_t. 
+// @param name:
+// @param bcf_dt_type
+// @param ptr
+// @return -1 indicates an error has occured and 0 a success
 const int bcfio::BcfHeader::decode_hts_idinfo_(const char *name, 
         const int bcf_dt_type, 
         bcfio::BcfHdrAttr *ptr) const {
 
-    // BCF_DT_ID is the ID dictionary index defined by htslib
+    // BCF_DT_ID is the C macro for the ID dictionary index defined by htslib
+    // see htslib/vcf.h line 86
     int idx = htslib::bcf_hdr_id2int(hdr, BCF_DT_ID, name);
 
     if (idx < 0)
@@ -45,26 +52,39 @@ const int bcfio::BcfHeader::get_filter(const char *name, BcfHdrAttr *ptr) const 
     return decode_hts_idinfo_(name, BCF_HL_FLT, ptr);
 }
 
+bcfio::BcfRecord::~BcfRecord() {
+    if (rec) htslib::bcf_destroy(rec);
+
+    // TODO: double check destructor of dst
+    if (dst) delete[] dst;
+}
+
+int bcfio::BcfRecord::get_fmt(bcfio::BcfHeader *hdr, const char *tag) {
+    
+    return htslib::bcf_get_format_values(hdr->hdr, rec, tag, 
+            (void**)(&dst), &ndst, BCF_HT_REAL);
+}
+
 
 bcfio::ReadBcf::ReadBcf(const char *bcfname)
     : fname_(bcfname),
     fid_(htslib::hts_open(bcfname, "r")),
-    hdr_(fid_) {};
+    hdr(fid_) {};
 
 
 // TODO: subset samples by those in sample_fname file
 bcfio::ReadBcf::ReadBcf(const char *bcfname, const char *sample_fname)
     : fname_(bcfname),
     fid_(htslib::hts_open(bcfname, "r")),
-    hdr_(fid_) {
+    hdr(fid_) {
 
     int status { 0 };
     // Subset samples with those found in the file sample_fname 
     if (!sample_fname || *sample_fname == '\0')
-        fprintf(stdout, "No file with sample names detected, computing"
-                "hGRM over all samples.\n");
+        fprintf(stdout, "No file with sample names detected, retreiving"
+                " records for all samples.\n");
     else
-        status = htslib::bcf_hdr_set_samples(hdr_.hdr, sample_fname, 1);
+        status = htslib::bcf_hdr_set_samples(hdr.hdr, sample_fname, 1);
 
     if (status < 0) {
         fprintf(stderr, "Error: Couldn't read sample file\n");
@@ -89,13 +109,13 @@ const size_t bcfio::ReadBcf::n_samples() const {
     // Remember that n is the number of entries in the triplet of 
     // dictionaries in the VCF.  BCF_DT_SAMPLE, provides the index of n
     // that correspondes to the number of samples.
-    return hdr_.hdr->n[BCF_DT_SAMPLE];
+    return hdr.hdr->n[BCF_DT_SAMPLE];
 };
 
-const size_t bcfio::ReadBcf::k_founders() const {
+const size_t bcfio::ReadBcf::k_haps() const {
     BcfHdrAttr fmt {};
 
-    if (hdr_.get_format("HD", &fmt) < 0)
+    if (hdr.get_format("HD", &fmt) < 0)
         printf("errror\n");
 
     return static_cast<size_t>(fmt.number);
@@ -108,16 +128,17 @@ std::unique_ptr<std::string[]> bcfio::ReadBcf::sample_names() const {
         std::make_unique<std::string[]>(n_samples()); 
 
     for (int i = 0; i < n_samples(); i++)
-        samp_names[i] = std::string(*(hdr_.hdr->samples + i));
+        samp_names[i] = std::string(*(hdr.hdr->samples + i));
 
     return samp_names;
 }
 
-
+// title: load next record
 int bcfio::ReadBcf::next_record(bcfio::BcfRecord *ptr) {
-    int status = htslib::bcf_read(fid_, hdr_.hdr, ptr->rec);
+    int status = htslib::bcf_read(fid_, hdr.hdr, ptr->rec);
     if (status != 0)
         return status;
 
+    // Unpacking options defined in htslib/vcf.h line 419
     return htslib::bcf_unpack(ptr->rec, BCF_UN_ALL);
 }
