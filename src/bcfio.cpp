@@ -12,25 +12,22 @@
 #include <bcfio.h>
 #include <cstdlib>
 
-// @title: 
-// @description decoder based upon htslib/vcf.h line 100 in the typedef
-//      struct bcf_idinfo_t. 
-// @param name:
-// @param bcf_dt_type
-// @param ptr
-// @return -1 indicates an error has occured and 0 a success
+// *****************************************************************************
+// class BcfHeader
+// *****************************************************************************
+//
 const int bcfio::BcfHeader::decode_hts_idinfo_(const char *name, 
         const int bcf_dt_type, 
         bcfio::BcfHdrAttr *ptr) const {
 
     // BCF_DT_ID is the C macro for the ID dictionary index defined by htslib
     // see htslib/vcf.h line 86
-    int idx = htslib::bcf_hdr_id2int(hdr, BCF_DT_ID, name);
+    int idx = htslib::bcf_hdr_id2int(hdr_, BCF_DT_ID, name);
 
     if (idx < 0)
         return -1;
 
-    uint64_t val = hdr->id[BCF_DT_ID][idx].val->info[bcf_dt_type];
+    uint64_t val = hdr_->id[BCF_DT_ID][idx].val->info[bcf_dt_type];
 
     ptr->number = val >> 12 & 0xfffff;
     ptr->vl_type = val >> 8 & 0xf;
@@ -40,32 +37,50 @@ const int bcfio::BcfHeader::decode_hts_idinfo_(const char *name,
     return 0;
 }
 
-const int bcfio::BcfHeader::get_format(const char *name, BcfHdrAttr *ptr) const {
-    return decode_hts_idinfo_(name, BCF_HL_FMT, ptr);
+int bcfio::BcfHeader::get_format(const char *id, BcfHdrAttr *ptr) const {
+    return decode_hts_idinfo_(id, BCF_HL_FMT, ptr);
 }
 
-const int bcfio::BcfHeader::get_info(const char *name, BcfHdrAttr *ptr) const {
-    return decode_hts_idinfo_(name, BCF_HL_INFO, ptr);
+int bcfio::BcfHeader::get_info(const char *id, BcfHdrAttr *ptr) const {
+    return decode_hts_idinfo_(id, BCF_HL_INFO, ptr);
 }
 
-const int bcfio::BcfHeader::get_filter(const char *name, BcfHdrAttr *ptr) const {
-    return decode_hts_idinfo_(name, BCF_HL_FLT, ptr);
+int bcfio::BcfHeader::get_filter(const char *id, BcfHdrAttr *ptr) const {
+    return decode_hts_idinfo_(id, BCF_HL_FLT, ptr);
 }
+
+// *****************************************************************************
+// class BcfRecord
+// *****************************************************************************
 
 bcfio::BcfRecord::~BcfRecord() {
     if (rec) htslib::bcf_destroy(rec);
-
-    // TODO: double check destructor of dst
-    if (dst) delete[] dst;
+    if (dst_) free(dst_);
 }
 
-int bcfio::BcfRecord::get_fmt(bcfio::BcfHeader *hdr, const char *tag) {
-    
-    return htslib::bcf_get_format_values(hdr->hdr, rec, tag, 
-            (void**)(&dst), &ndst, BCF_HT_REAL);
+int bcfio::BcfRecord::load_data(bcfio::BcfHeader *hdr, const char *id) {
+    int status { 0 };
+
+    if ((status = hdr->get_format(id, &attr_)) != 0) 
+        return status;
+
+    if (attr_->type == BCF_HT_REAL)
+        return htslib::bcf_get_format_values(hdr->hts_hdr(), rec, id, 
+                (void**)(&fdst_), &ndst_, BCF_HT_REAL);
+    else if (attr_->type == BCF_HT_STR)
+        return htslib::bcf_get_format_values(hdr->hts_hdr(), rec, id, 
+                (void**)(&cdst_), &ndst_, BCF_HT_STR);
+
+    printf("ERROR: Only types string and float are currently supported."
+            " contact the project maintainer if your type is not yet"
+            " supported.\n");
+    return -1;
 }
 
 
+// *****************************************************************************
+// class BcfRead
+// *****************************************************************************
 bcfio::ReadBcf::ReadBcf(const char *bcfname)
     : fname_(bcfname),
     fid_(htslib::hts_open(bcfname, "r")),
@@ -104,21 +119,14 @@ bcfio::ReadBcf::~ReadBcf() {
         htslib::hts_close(fid_);
 }
 
-const size_t bcfio::ReadBcf::n_samples() const {
-    // See htslib/vcf.h line 649
-    // Remember that n is the number of entries in the triplet of 
-    // dictionaries in the VCF.  BCF_DT_SAMPLE, provides the index of n
-    // that correspondes to the number of samples.
-    return hdr.hdr->n[BCF_DT_SAMPLE];
-};
 
 const size_t bcfio::ReadBcf::k_haps() const {
     BcfHdrAttr fmt {};
 
     if (hdr.get_format("HD", &fmt) < 0)
-        printf("errror\n");
+        printf("error\n");
 
-    return static_cast<size_t>(fmt.number);
+    return static_cast<const size_t>(fmt.number);
 }
 
 // Note: May be better to just return a reference?

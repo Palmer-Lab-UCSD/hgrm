@@ -55,32 +55,40 @@ struct BcfHdrAttr { uint64_t number : 20, vl_type : 4, type : 4, coltype : 4; };
 //      memory leak.  
 class BcfHeader {
 public:
-    htslib::bcf_hdr_t *hdr;
     
     BcfHeader(htslib::htsFile *fid): 
-        hdr(fid ? htslib::bcf_hdr_read(fid) : nullptr) {};
+        hdr_(fid ? htslib::bcf_hdr_read(fid) : nullptr) {};
 
-    ~BcfHeader() { 
-        if (hdr) htslib::bcf_hdr_destroy(hdr); 
-        hdr = nullptr;
-    };
+    ~BcfHeader() { if (hdr_) htslib::bcf_hdr_destroy(hdr_); };
 
-    const bool isnull() const { return hdr == nullptr; };
+    bool isnull() const { return hdr_ == nullptr; };
 
     // sample_names()
 
     // @title: "get_*" member functions for info retrieval
     // @description:
-    // @param name: the id of the formatted data field to retrieve
-    // @param ptr: the pointer to memory for which the BcfHdrAttr 
-    //      data will be copied into memory.
-    // @return 
-    const int get_format(const char *name, BcfHdrAttr *ptr) const;
-    const int get_info(const char *name, BcfHdrAttr *ptr) const;
-    const int get_filter(const char *name, BcfHdrAttr *ptr) const;
+    // @param id: the id of the formatted data field to retrieve
+    // @param ptr: the pointer to memory for which the BcfHdrAttr data will be
+    //      copied into memory.
+    // @return 0 for success < 0 for fail
+    int get_format(const char *id, BcfHdrAttr *ptr) const;
+    int get_info(const char *id, BcfHdrAttr *ptr) const;
+    int get_filter(const char *id, BcfHdrAttr *ptr) const;
+
+    const htslib::bcf_hdr_t *hts_hdr() const { return hdr_; };
 
 private:
-    const int decode_hts_idinfo_(const char *name, 
+    htslib::bcf_hdr_t *hdr_;
+    BcfHdrAttr attr_ {};
+
+    // @title: 
+    // @description decoder based upon htslib/vcf.h line 100 in the typedef
+    //      struct bcf_idinfo_t. 
+    // @param name:
+    // @param bcf_dt_type
+    // @param ptr
+    // @return -1 indicates an error has occured and 0 a success
+    int decode_hts_idinfo_(const char *name, 
             const int bcf_dt_type, 
             BcfHdrAttr *ptr) const;
 };
@@ -89,18 +97,32 @@ private:
 // @title Manage bcf record
 // @description Manage the lifetime of a htslib::bcf1_t type record using 
 //      htslib functions with RAII.  
-struct BcfRecord {
-    BcfRecord(): rec(htslib::bcf_init()) {};
+class BcfRecord {
+public:
+    BcfRecord(): rec_(htslib::bcf_init()) {};
     ~BcfRecord();
+    operator[](size_t idx);
 
     bool is_snp() const { return htslib::bcf_is_snp(rec); }
 
-    int get_fmt(BcfHeader *hdr, const char *tag);
+    // @title: Load sample data at the current locus
+    // @description: Sample data of the specified format at the current locus
+    //      is not made available by reading a locus's record and storing in
+    //      the bcf1_t type.  Instead, we need to supply a pointer variable
+    //      and format id to make that id's smaple data available.  This 
+    //      function help simplify this process.
+    // @param hdr: instance of the bcf header to retreive meta data
+    // @param tag: the C-string id representing the data we want to query.
+    // @return 0 upon success and != 0 for failure
+    int load_data(BcfHeader *hdr, const char *tag);
 
-    htslib::bcf1_t *rec;
+    const htslib::bcf1_t *cur_rec() const { return rec_; }; 
 
-    int ndst = 0;
-    float *dst = nullptr;
+private:
+    htslib::bcf1_t *rec_;
+    int ndst_ = 0;
+    float *fdst_ = nullptr;
+    char **cdst_ = nullptr;
 };
 
 
@@ -117,34 +139,27 @@ class ReadBcf
 private:
     const std::string fname_;
     htslib::htsFile *fid_;
+    BcfHeader hdr_;
 
 public:
     ReadBcf(const char *bcfname);
     ReadBcf(const char *bcfname, const char *sample_fname);
-    // HaplotypeVcfParser(const std::string& variant_fname);
-    // HaplotypeVcfParser(const std::string& variant_fname,
-    //        const std::string& sample_fname);
 
     ReadBcf()=delete; 
     ReadBcf(const ReadBcf&)=delete;
     ReadBcf(const ReadBcf&&)=delete;
-    // HaplotypeVcfParser& operator=(const HaplotypeVcfParser&)=delete;
 
     ~ReadBcf();
 
-    const size_t n_samples() const;
+    // See htslib/vcf.h line 649
+    // Remember that n is the number of entries in the triplet of 
+    // dictionaries in the VCF.  BCF_DT_SAMPLE, provides the index of n
+    // that correspondes to the number of samples.
+    const size_t n_samples() const { return hdr_.hdr_->n[BCF_DT_SAMPLE]; };
     const size_t k_haps() const;
     std::unique_ptr<std::string[]> sample_names() const;
 
     int next_record(BcfRecord *rec);
-
-    BcfHeader hdr;
-
-    // size_t fpos_record_one_ { 0 };
-
-    // void pos_(size_t);
-    // size_t get_line_num_char_();
-    // void set_params_();
 };
 }
 
