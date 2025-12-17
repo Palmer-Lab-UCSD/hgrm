@@ -25,7 +25,7 @@ const int bcfio::BcfHeader::decode_hts_idinfo_(const char *name,
     int idx = htslib::bcf_hdr_id2int(hdr_, BCF_DT_ID, name);
 
     if (idx < 0)
-        return -1;
+        return idx;
 
     uint64_t val = hdr_->id[BCF_DT_ID][idx].val->info[bcf_dt_type];
 
@@ -37,16 +37,29 @@ const int bcfio::BcfHeader::decode_hts_idinfo_(const char *name,
     return 0;
 }
 
-int bcfio::BcfHeader::get_format(const char *id, BcfHdrAttr *ptr) const {
+int bcfio::BcfHeader::get_format_attr(const char *id, BcfHdrAttr *ptr) const {
     return decode_hts_idinfo_(id, BCF_HL_FMT, ptr);
 }
 
-int bcfio::BcfHeader::get_info(const char *id, BcfHdrAttr *ptr) const {
+int bcfio::BcfHeader::get_info_attr(const char *id, BcfHdrAttr *ptr) const {
     return decode_hts_idinfo_(id, BCF_HL_INFO, ptr);
 }
 
-int bcfio::BcfHeader::get_filter(const char *id, BcfHdrAttr *ptr) const {
+int bcfio::BcfHeader::get_filter_attr(const char *id, BcfHdrAttr *ptr) const {
     return decode_hts_idinfo_(id, BCF_HL_FLT, ptr);
+}
+
+int32_t bcfio::BcfHeader::k_fmt(const char *id) const {
+    BcfHdrAttr fmt {};
+
+    int32_t status { 0 };
+
+    if ((status = hdr.get_format(id, &fmt)) < 0) {
+        printf("ERROR: invalid id: %s\n", id);
+        return status;
+    }
+
+    return static_cast<int32_t>(fmt.number);
 }
 
 // *****************************************************************************
@@ -54,27 +67,38 @@ int bcfio::BcfHeader::get_filter(const char *id, BcfHdrAttr *ptr) const {
 // *****************************************************************************
 
 bcfio::BcfRecord::~BcfRecord() {
-    if (rec) htslib::bcf_destroy(rec);
+    if (rec_) htslib::bcf_destroy(rec_);
     if (dst_) free(dst_);
+    rec = nullptr;
+    dst_ = nullptr;
 }
+
+float operator[](const size_t idx) const {
+    if (idx > col_num_ * row_num_)
+        return 
+    return *(dst_ + idx);
+}
+
 
 int bcfio::BcfRecord::load_data(bcfio::BcfHeader *hdr, const char *id) {
     int status { 0 };
+    col_num_ = row_num_ = 0;
 
-    if ((status = hdr->get_format(id, &attr_)) != 0) 
+    if ((status = hdr->get_format_attr(id, &attr_)) < 0) 
         return status;
 
-    if (attr_->type == BCF_HT_REAL)
-        return htslib::bcf_get_format_values(hdr->hts_hdr(), rec, id, 
-                (void**)(&fdst_), &ndst_, BCF_HT_REAL);
-    else if (attr_->type == BCF_HT_STR)
-        return htslib::bcf_get_format_values(hdr->hts_hdr(), rec, id, 
-                (void**)(&cdst_), &ndst_, BCF_HT_STR);
+    status = htslib::bcf_get_format_values(hdr->hts_hdr(), 
+            rec, 
+            id, 
+            (void**)(&fdst_),
+            &fndst_, 
+            BCF_HT_REAL);
 
-    printf("ERROR: Only types string and float are currently supported."
-            " contact the project maintainer if your type is not yet"
-            " supported.\n");
-    return -1;
+    if (status < 0)
+        return status;
+
+    col_num_ = hdr.k_fmt(id);
+    row_num_ = hdr.n_samples();
 }
 
 
@@ -119,15 +143,6 @@ bcfio::ReadBcf::~ReadBcf() {
         htslib::hts_close(fid_);
 }
 
-
-const size_t bcfio::ReadBcf::k_haps() const {
-    BcfHdrAttr fmt {};
-
-    if (hdr.get_format("HD", &fmt) < 0)
-        printf("error\n");
-
-    return static_cast<const size_t>(fmt.number);
-}
 
 // Note: May be better to just return a reference?
 std::unique_ptr<std::string[]> bcfio::ReadBcf::sample_names() const {

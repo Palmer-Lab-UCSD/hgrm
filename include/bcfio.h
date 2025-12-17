@@ -49,7 +49,7 @@ namespace bcfio {
 struct BcfHdrAttr { uint64_t number : 20, vl_type : 4, type : 4, coltype : 4; };
 
 
-// @title: Manage bcf header 
+// @title: Interface and manager of htslib bcf_hdr_t
 // @description: The bcf header C-struct requires manual allocation and release
 //      of memory.  This class manages applies RAII, reducing the chance of a
 //      memory leak.  
@@ -65,15 +65,26 @@ public:
 
     // sample_names()
 
-    // @title: "get_*" member functions for info retrieval
+    // @title: "get_*" member functions for attribute retrieval
     // @description:
     // @param id: the id of the formatted data field to retrieve
     // @param ptr: the pointer to memory for which the BcfHdrAttr data will be
     //      copied into memory.
     // @return 0 for success < 0 for fail
-    int get_format(const char *id, BcfHdrAttr *ptr) const;
-    int get_info(const char *id, BcfHdrAttr *ptr) const;
-    int get_filter(const char *id, BcfHdrAttr *ptr) const;
+    int get_format_attr(const char *id, BcfHdrAttr *ptr) const;
+    int get_info_attr(const char *id, BcfHdrAttr *ptr) const;
+    int get_filter_attr(const char *id, BcfHdrAttr *ptr) const;
+
+    // @title: The number of values stored in format id
+    // @description: Each bcf format field is able to hold unique number of
+    //      values per sample.  This function provides a simple interface to
+    //      the bcf file to retrieve that number.
+    // @param id: the format field id
+    // @return if an error occured that value returned is < 0, otherwise the
+    //      number of values of fmt field id recorded per sample is returned.
+    int32_t k_fmt(const char *id) const;
+
+    size_t n_samples() const { return hdr_->n[BCF_DT_SAMPLE]; };
 
     const htslib::bcf_hdr_t *hts_hdr() const { return hdr_; };
 
@@ -94,16 +105,21 @@ private:
 };
 
 
-// @title Manage bcf record
-// @description Manage the lifetime of a htslib::bcf1_t type record using 
-//      htslib functions with RAII.  
-class BcfRecord {
+// @title: Interface and manage htslib bcf1_t
+// @description: The htslib bcf1_t data structure requires manual memory
+//      management, knowledge of several bit-packed values, knowledge of
+//      several functions for querying data.  This class simplifies 
+//      memory management using C++ RAII idiom and provides a simplified,
+//      albeit non-comprehensive, interface for loading and querying data
+//      stored in the bcf1_t struct.
+class BcfFloatRecord {
 public:
+
     BcfRecord(): rec_(htslib::bcf_init()) {};
     ~BcfRecord();
-    operator[](size_t idx);
 
-    bool is_snp() const { return htslib::bcf_is_snp(rec); }
+    // access to loaded data
+    float operator[](const size_t idx) const;
 
     // @title: Load sample data at the current locus
     // @description: Sample data of the specified format at the current locus
@@ -115,14 +131,21 @@ public:
     // @param tag: the C-string id representing the data we want to query.
     // @return 0 upon success and != 0 for failure
     int load_data(BcfHeader *hdr, const char *tag);
-
     const htslib::bcf1_t *cur_rec() const { return rec_; }; 
+
+    bool is_snp() const { return htslib::bcf_is_snp(rec); }
 
 private:
     htslib::bcf1_t *rec_;
+
+    // These attributes store htslib access points to record data
     int ndst_ = 0;
-    float *fdst_ = nullptr;
-    char **cdst_ = nullptr;
+    float *dst_ = nullptr;
+
+    // data that dst_ point to are stored in row major order, with columns
+    // being k_fmt and rows being n_samples.
+    size_t col_num_ = 0;
+    size_t row_num_ = 0;
 };
 
 
@@ -142,6 +165,7 @@ private:
     BcfHeader hdr_;
 
 public:
+    // TODO: Review C++ idioms the rule of three and five
     ReadBcf(const char *bcfname);
     ReadBcf(const char *bcfname, const char *sample_fname);
 
@@ -151,15 +175,25 @@ public:
 
     ~ReadBcf();
 
+    // @title: The number of values stored in format id
+    // @description: Each bcf format field is able to hold unique number of
+    //      values per sample.  This function provides a simple interface to
+    //      the bcf file to retrieve that number.
+    // @param id: the format field id
+    // @return if an error occured that value returned is < 0, otherwise the
+    //      number of values of fmt field id recorded per sample is returned.
+    int32_t k_fmt(const char *id) const { return hdr_.k_fmt(id); };
+
     // See htslib/vcf.h line 649
     // Remember that n is the number of entries in the triplet of 
     // dictionaries in the VCF.  BCF_DT_SAMPLE, provides the index of n
     // that correspondes to the number of samples.
-    const size_t n_samples() const { return hdr_.hdr_->n[BCF_DT_SAMPLE]; };
-    const size_t k_haps() const;
+    size_t n_samples() const { return hdr_.n_samples() };
+    
+    // TODO: sample_names
     std::unique_ptr<std::string[]> sample_names() const;
 
-    int next_record(BcfRecord *rec);
+    int next_record(BcfFloatRecord *rec);
 };
 }
 

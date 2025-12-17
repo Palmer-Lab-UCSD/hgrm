@@ -17,7 +17,7 @@ extern "C" {
 char VCF_NAME[] { "build/geno_test_data.vcf" };
 char VCFGZ_NAME[] { "build/geno_test_data.vcf.gz" };
 char BCF_NAME[] { "build/geno_test_data.bcf" };
-size_t K_FOUNDERS = 8;
+int32_t K_FOUNDERS = 8;
 size_t N_SAMPS = 11;
 
 
@@ -221,7 +221,21 @@ TEST(TestBcfHeader, BcfHdrNull) {
 TEST(TestReadBcf, Constructor) {
     bcfio::ReadBcf bcf { VCF_NAME };
     EXPECT_EQ(bcf.n_samples(), N_SAMPS);
-    EXPECT_EQ(bcf.k_haps(), K_FOUNDERS);
+    EXPECT_EQ(bcf.k_fmt("HD"), K_FOUNDERS);
+}
+
+
+TEST(TestReadBcf, K_fmt) {
+    bcfio::ReadBcf bcf { VCF_NAME };
+
+    // DS is alt allele dosage, which is more clearly defined as the expected
+    // count of alt alleles under the trained HMM
+    EXPECT_EQ(bcf.k_fmt("DS"), 1);
+
+    // error detection
+    EXPECT_TRUE(bcf.k_fmt("WRONG_ID") < 0);
+    EXPECT_TRUE(bcf.k_fmt("") < 0);
+    EXPECT_TRUE(bcf.k_fmt(nullptr) < 0);
 }
 
 TEST(TestReadBcf, VcfSampNames) {
