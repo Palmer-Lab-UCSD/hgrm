@@ -115,8 +115,8 @@ private:
 class BcfFloatRecord {
 public:
 
-    BcfRecord(): rec_(htslib::bcf_init()) {};
-    ~BcfRecord();
+    BcfFloatRecord(): rec_(htslib::bcf_init()) {};
+    ~BcfFloatRecord();
 
     // access to loaded data
     float operator[](const size_t idx) const;

@@ -63,10 +63,10 @@ int32_t bcfio::BcfHeader::k_fmt(const char *id) const {
 }
 
 // *****************************************************************************
-// class BcfRecord
+// class BcfFloatRecord
 // *****************************************************************************
 
-bcfio::BcfRecord::~BcfRecord() {
+bcfio::BcfFloatRecord::~BcfFloatRecord() {
     if (rec_) htslib::bcf_destroy(rec_);
     if (dst_) free(dst_);
     rec = nullptr;
@@ -80,7 +80,7 @@ float operator[](const size_t idx) const {
 }
 
 
-int bcfio::BcfRecord::load_data(bcfio::BcfHeader *hdr, const char *id) {
+int bcfio::BcfFloatRecord::load_data(bcfio::BcfHeader *hdr, const char *id) {
     int status { 0 };
     col_num_ = row_num_ = 0;
 
@@ -157,7 +157,7 @@ std::unique_ptr<std::string[]> bcfio::ReadBcf::sample_names() const {
 }
 
 // title: load next record
-int bcfio::ReadBcf::next_record(bcfio::BcfRecord *ptr) {
+int bcfio::ReadBcf::next_record(bcfio::BcfFloatRecord *ptr) {
     int status = htslib::bcf_read(fid_, hdr.hdr, ptr->rec);
     if (status != 0)
         return status;
