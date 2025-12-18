@@ -4,29 +4,38 @@
 
 int compute_haplotype_matrix(Logger *log, bcfio::ReadBcf *bfid, Matrix *cov) {
 
-    int output_status = -1;
+    int output_status = 0;
 
     // instantiate matrices to hold calculations
     const size_t n_samples { bfid->n_samples() };
-    const size_t k_haps { bfid->k_haps() };
+    int32_t k { 0 };
+    if ((k = bfid->k_fmt("HD")) < 0) {
+        log->error("%s\n", "Wrong format id tag");
+        exit(EXIT_FAILURE);
+    }
+    const size_t k_haps { static_cast<size_t>(k) };
     
     size_t idx_row { 0 };
     // size_t idx_col { 0 };
     size_t idx_hap { 0 };
     size_t idx_rec { 0 };
 
-    bcfio::BcfRecord rec {};
+    bcfio::BcfFloatRecord rec {};
 
-    int num = 0;
-    while (bfid->next_record(&rec) == 0) {
+    std::optional<float> val { 0 };
 
-        // remember that -> has higher precedence thatn &
-        num = rec.get_fmt(&bfid->hdr, "HD");
+    while (bfid->next_record(&rec, "HD") == 0) {
 
-        printf("num: %d\n", num);
         for (idx_row = 0; idx_row < n_samples; idx_row++) {
-            for (idx_hap = 0; idx_hap < k_haps; idx_hap++)
-                printf("%f\t ", rec.dst[idx_row*k_haps + idx_hap]);
+
+            for (idx_hap = 0; idx_hap < k_haps; idx_hap++) {
+                if ((val = rec.get(idx_row, idx_hap)) == std::nullopt) {
+                    printf("IDX: (%zu, %zu) = null\n", idx_row, idx_hap);
+                    return -1;
+                }
+                printf("%f\t ", val.value());
+            }
+
             printf("\n");
         }
 

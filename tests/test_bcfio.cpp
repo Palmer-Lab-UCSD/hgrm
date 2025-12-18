@@ -21,6 +21,10 @@ int32_t K_FOUNDERS = 8;
 size_t N_SAMPS = 11;
 
 
+// ************************************************************************
+// Test bcfio::BcfHeader
+// ************************************************************************
+
 TEST(TestBcfHeader, ConstructorVcfHdr) {
     htslib::htsFile *fid = htslib::hts_open(VCF_NAME, "r");
     bcfio::BcfHeader hdr { fid };
@@ -29,7 +33,7 @@ TEST(TestBcfHeader, ConstructorVcfHdr) {
 
     bcfio::BcfHdrAttr attr {};
 
-    int status = hdr.get_format("HD", &attr);
+    int status = hdr.get_format_attr("HD", &attr);
     EXPECT_EQ(status, 0);
     EXPECT_EQ(attr.number, K_FOUNDERS);
     EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
@@ -46,7 +50,7 @@ TEST(TestBcfHeader, ConstructorVcfGzHdr) {
 
     bcfio::BcfHdrAttr attr {};
 
-    int status = hdr.get_format("HD", &attr);
+    int status = hdr.get_format_attr("HD", &attr);
     EXPECT_EQ(status, 0);
     EXPECT_EQ(attr.number, K_FOUNDERS);
     EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
@@ -63,7 +67,7 @@ TEST(TestBcfHeader, ConstructorBcfHdr) {
     
     bcfio::BcfHdrAttr attr {};
 
-    int status = hdr.get_format("HD", &attr);
+    int status = hdr.get_format_attr("HD", &attr);
     EXPECT_EQ(status, 0);
     EXPECT_EQ(attr.number, K_FOUNDERS);
     EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
@@ -81,7 +85,7 @@ TEST(TestBcfHeader, BcfHdrFmtGt) {
     
     bcfio::BcfHdrAttr attr {};
 
-    int status = hdr.get_format("GT", &attr);
+    int status = hdr.get_format_attr("GT", &attr);
     EXPECT_EQ(status, 0);
     EXPECT_EQ(attr.number, 1);
     EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
@@ -99,7 +103,7 @@ TEST(TestBcfHeader, BcfHdrFmtGp) {
     
     bcfio::BcfHdrAttr attr {};
 
-    int status = hdr.get_format("GP", &attr);
+    int status = hdr.get_format_attr("GP", &attr);
     EXPECT_EQ(status, 0);
     EXPECT_EQ(attr.number, 3);
     EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
@@ -116,7 +120,7 @@ TEST(TestBcfHeader, BcfHdrFmtDs) {
     
     bcfio::BcfHdrAttr attr {};
 
-    int status = hdr.get_format("DS", &attr);
+    int status = hdr.get_format_attr("DS", &attr);
     EXPECT_EQ(status, 0);
     EXPECT_EQ(attr.number, 1);
     EXPECT_EQ(attr.vl_type, BCF_VL_FIXED);
@@ -134,7 +138,7 @@ TEST(TestBcfHeader, BcfHdrFmtErr) {
     
     bcfio::BcfHdrAttr attr {};
 
-    int status = hdr.get_format("DOESNOTEXIST", &attr);
+    int status = hdr.get_format_attr("DOESNOTEXIST", &attr);
     EXPECT_NE(status, 0);
 
     if (fid) htslib::hts_close(fid);
@@ -149,10 +153,10 @@ TEST(TestBcfHeader, BcfHdrFilter) {
     
     bcfio::BcfHdrAttr attr {};
 
-    int status = hdr.get_filter("PASS", &attr);
+    int status = hdr.get_filter_attr("PASS", &attr);
     EXPECT_EQ(status, 0);
 
-    status = hdr.get_filter("PASSING", &attr);
+    status = hdr.get_filter_attr("PASSING", &attr);
     EXPECT_NE(status, 0);
 
     if (fid) htslib::hts_close(fid);
@@ -167,7 +171,7 @@ TEST(TestBcfHeader, BcfHdrInfoEaf) {
     
     bcfio::BcfHdrAttr attr {};
 
-    int status = hdr.get_info("EAF", &attr);
+    int status = hdr.get_info_attr("EAF", &attr);
     EXPECT_EQ(status, 0);
     EXPECT_EQ(attr.type, BCF_HT_REAL);
     EXPECT_EQ(attr.vl_type, BCF_VL_VAR);
@@ -184,7 +188,7 @@ TEST(TestBcfHeader, BcfHdrInfoErc) {
     
     bcfio::BcfHdrAttr attr {};
 
-    int status = hdr.get_info("ERC", &attr);
+    int status = hdr.get_info_attr("ERC", &attr);
     EXPECT_EQ(status, 0);
     EXPECT_EQ(attr.type, BCF_HT_REAL);
     EXPECT_EQ(attr.vl_type, BCF_VL_VAR);
@@ -201,7 +205,7 @@ TEST(TestBcfHeader, BcfHdrInfoErr) {
     
     bcfio::BcfHdrAttr attr {};
 
-    int status = hdr.get_info("NOTAINFOMEMBER", &attr);
+    int status = hdr.get_info_attr("NOTAINFOMEMBER", &attr);
     EXPECT_NE(status, 0);
 
     if (fid) htslib::hts_close(fid);
@@ -217,6 +221,92 @@ TEST(TestBcfHeader, BcfHdrNull) {
 }
 
 
+TEST(TestBcfHeader, Kfmt) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    // DS is alt allele dosage, which is more clearly defined as the expected
+    // count of alt alleles under the trained HMM
+    EXPECT_EQ(hdr.k_fmt("DS"), 1);
+    EXPECT_EQ(hdr.k_fmt("HD"), K_FOUNDERS);
+
+    // error detection
+    EXPECT_TRUE(hdr.k_fmt("WRONG_ID") < 0);
+    EXPECT_TRUE(hdr.k_fmt("") < 0);
+    EXPECT_TRUE(hdr.k_fmt(nullptr) < 0);
+}
+
+TEST(TestBcfHeader, Nsamples) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    // DS is alt allele dosage, which is more clearly defined as the expected
+    // count of alt alleles under the trained HMM
+    EXPECT_EQ(hdr.n_samples(), N_SAMPS);
+}
+
+TEST(TestBcfHeader, VcfSampNames) {
+    htslib::htsFile *fid = htslib::hts_open(VCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    const std::unique_ptr<std::string[]> s = hdr.sample_names();
+
+    char samp_name[] = "S01";
+
+    for (int i = 0; i < hdr.n_samples(); i++) {
+        snprintf(samp_name, 4, "S%02d", i+1);
+        EXPECT_STREQ(s[i].c_str(), samp_name);
+    }
+}
+
+
+TEST(TestReadBcf, VcfGzSampNames) {
+    htslib::htsFile *fid = htslib::hts_open(VCFGZ_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    const std::unique_ptr<std::string[]> s = hdr.sample_names();
+
+    char samp_name[] = "S01";
+
+    for (int i = 0; i < hdr.n_samples(); i++) {
+        snprintf(samp_name, 4, "S%02d", i+1);
+        EXPECT_STREQ(s[i].c_str(), samp_name);
+    }
+}
+
+
+TEST(TestReadBcf, BcfSampNames) {
+    htslib::htsFile *fid = htslib::hts_open(BCF_NAME, "r");
+    bcfio::BcfHeader hdr { fid };
+
+    const std::unique_ptr<std::string[]> s = hdr.sample_names();
+
+    char samp_name[] = "S01";
+
+    for (int i = 0; i < hdr.n_samples(); i++) {
+        snprintf(samp_name, 4, "S%02d", i+1);
+        EXPECT_STREQ(s[i].c_str(), samp_name);
+    }
+}
+
+
+
+// ************************************************************************
+// Test bcfio::BcfFloatRecord
+// ************************************************************************
+
+TEST(TestBcfFloatRecord, Constructor) {
+    bcfio::BcfFloatRecord brec {};
+
+    EXPECT_EQ(brec.size(), 0);
+    EXPECT_EQ(brec.get(1, 3), std::nullopt);
+}
+
+
+
+// ************************************************************************
+// Test bcfio::ReadBcf
+// ************************************************************************
 
 TEST(TestReadBcf, Constructor) {
     bcfio::ReadBcf bcf { VCF_NAME };
@@ -225,59 +315,22 @@ TEST(TestReadBcf, Constructor) {
 }
 
 
-TEST(TestReadBcf, K_fmt) {
+TEST(TestReadBcf, Kfmt) {
     bcfio::ReadBcf bcf { VCF_NAME };
 
     // DS is alt allele dosage, which is more clearly defined as the expected
     // count of alt alleles under the trained HMM
     EXPECT_EQ(bcf.k_fmt("DS"), 1);
+    EXPECT_EQ(bcf.k_fmt("HD"), K_FOUNDERS);
 
+    // TODO: what happens if I submit "GT", it exists but is a string
+    //      not float
     // error detection
     EXPECT_TRUE(bcf.k_fmt("WRONG_ID") < 0);
     EXPECT_TRUE(bcf.k_fmt("") < 0);
     EXPECT_TRUE(bcf.k_fmt(nullptr) < 0);
 }
 
-TEST(TestReadBcf, VcfSampNames) {
-    bcfio::ReadBcf bcf { VCF_NAME };
-
-    std::unique_ptr<std::string[]> s = bcf.sample_names();
-
-    char samp_name[] = "S01";
-
-    for (int i = 0; i < bcf.n_samples(); i++) {
-        snprintf(samp_name, 4, "S%02d", i+1);
-        EXPECT_STREQ(s[i].c_str(), samp_name);
-    }
-}
-
-
-TEST(TestReadBcf, VcfGzSampNames) {
-    bcfio::ReadBcf bcf { VCFGZ_NAME };
-
-    std::unique_ptr<std::string[]> s = bcf.sample_names();
-
-    char samp_name[] = "S01";
-
-    for (int i = 0; i < bcf.n_samples(); i++) {
-        snprintf(samp_name, 4, "S%02d", i+1);
-        EXPECT_STREQ(s[i].c_str(), samp_name);
-    }
-}
-
-
-TEST(TestReadBcf, BcfSampNames) {
-    bcfio::ReadBcf bcf { BCF_NAME };
-
-    std::unique_ptr<std::string[]> s = bcf.sample_names();
-
-    char samp_name[] = "S01";
-
-    for (int i = 0; i < bcf.n_samples(); i++) {
-        snprintf(samp_name, 4, "S%02d", i+1);
-        EXPECT_STREQ(s[i].c_str(), samp_name);
-    }
-}
 
 
 // TEST(TestHaplotypeVCFParser, LoadRecord) {

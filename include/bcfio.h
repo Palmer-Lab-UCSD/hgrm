@@ -11,10 +11,12 @@
 #ifndef HEADER_PARSE_HTS_H
 #define HEADER_PARSE_HTS_H
 
-#include <matrix.h>
+#include <cstdlib>
+#include <optional>
 #include <string>
 #include <array>
-#include <cstdlib>
+
+#include <matrix.h>
 
 namespace htslib {
 extern "C" {
@@ -63,7 +65,9 @@ public:
 
     bool isnull() const { return hdr_ == nullptr; };
 
-    // sample_names()
+
+    // @title: Retreive the set of smaple names
+    const std::unique_ptr<std::string[]> sample_names() const;
 
     // @title: "get_*" member functions for attribute retrieval
     // @description:
@@ -75,6 +79,7 @@ public:
     int get_info_attr(const char *id, BcfHdrAttr *ptr) const;
     int get_filter_attr(const char *id, BcfHdrAttr *ptr) const;
 
+    int subset_samples(const char *filename);
     // @title: The number of values stored in format id
     // @description: Each bcf format field is able to hold unique number of
     //      values per sample.  This function provides a simple interface to
@@ -86,11 +91,12 @@ public:
 
     size_t n_samples() const { return hdr_->n[BCF_DT_SAMPLE]; };
 
+    // TODO: what unit test should I do for this?
     const htslib::bcf_hdr_t *hts_hdr() const { return hdr_; };
 
 private:
     htslib::bcf_hdr_t *hdr_;
-    BcfHdrAttr attr_ {};
+    // BcfHdrAttr attr_ {};
 
     // @title: 
     // @description decoder based upon htslib/vcf.h line 100 in the typedef
@@ -118,8 +124,11 @@ public:
     BcfFloatRecord(): rec_(htslib::bcf_init()) {};
     ~BcfFloatRecord();
 
-    // access to loaded data
-    float operator[](const size_t idx) const;
+    // provide check-free fast, but unsafe, access to loaded data
+    float operator[](const size_t idx) const { return *(dst_ + idx); };
+
+    // provide index checked access to data.
+    std::optional<float> get(const size_t row_idx, const size_t col_idx) const;
 
     // @title: Load sample data at the current locus
     // @description: Sample data of the specified format at the current locus
@@ -131,9 +140,11 @@ public:
     // @param tag: the C-string id representing the data we want to query.
     // @return 0 upon success and != 0 for failure
     int load_data(BcfHeader *hdr, const char *tag);
-    const htslib::bcf1_t *cur_rec() const { return rec_; }; 
+    size_t size() const { return static_cast<size_t>(ndst_); };
 
-    bool is_snp() const { return htslib::bcf_is_snp(rec); }
+    htslib::bcf1_t *cur_rec() const { return rec_; }; 
+
+    bool is_snp() const { return htslib::bcf_is_snp(rec_); }
 
 private:
     htslib::bcf1_t *rec_;
@@ -159,11 +170,6 @@ private:
 //      all sample records are retrieved.
 class ReadBcf
 {
-private:
-    const std::string fname_;
-    htslib::htsFile *fid_;
-    BcfHeader hdr_;
-
 public:
     // TODO: Review C++ idioms the rule of three and five
     ReadBcf(const char *bcfname);
@@ -188,12 +194,20 @@ public:
     // Remember that n is the number of entries in the triplet of 
     // dictionaries in the VCF.  BCF_DT_SAMPLE, provides the index of n
     // that correspondes to the number of samples.
-    size_t n_samples() const { return hdr_.n_samples() };
+    size_t n_samples() const { return hdr_.n_samples(); };
     
     // TODO: sample_names
-    std::unique_ptr<std::string[]> sample_names() const;
+    const std::unique_ptr<std::string[]> sample_names() const { 
+        return hdr_.sample_names();
+    }
 
-    int next_record(BcfFloatRecord *rec);
+    int next_record(BcfFloatRecord *rec, const char *id);
+
+private:
+    const std::string fname_;
+    htslib::htsFile *fid_;
+    BcfHeader hdr_;
+
 };
 }
 
