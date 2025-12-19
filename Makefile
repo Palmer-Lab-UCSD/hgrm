@@ -17,14 +17,16 @@
 
 ifneq ($(shell which clang++),)
 CXX					= clang++
+CXXFLAGS			= -pedantic -Wextra
 else ifneq ($(shell which g++),)
 CXX					= g++
+CXXFLAGS			= -Wpedantic -Wextra
 else
 $(error "Couldn't establish either clang or gcc compiler availability")
 endif
 
 
-CXXFLAGS			= -g -std=c++17 -Wall -Werror
+CXXFLAGS			+= -g -std=c++17 -Wall -Werror
 
 ifndef VIM
 CXXFLAGS += -fdiagnostics-color=always
