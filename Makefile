@@ -17,7 +17,7 @@
 
 ifneq ($(shell which clang++),)
 CXX					= clang++
-CXXFLAGS			= -pedantic -Wextra
+CXXFLAGS			= -pedantic # -Wextra
 else ifneq ($(shell which g++),)
 CXX					= g++
 CXXFLAGS			= -Wpedantic -Wextra
@@ -32,6 +32,7 @@ ifndef VIM
 CXXFLAGS += -fdiagnostics-color=always
 endif
 
+# Recall that -c flag prevents the compiler linking object files
 OBJ_OUTPUT_OPTIONS 	= -c -MMD -MP -o $@
 AR 					= ar
 AR_FLAGS 			= crs
@@ -86,7 +87,6 @@ $(TARGET): $(SRC_DIR)/main.cpp $(APP_OBJS)
 	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^ -largparse -lhts
 
 
-# Recall that -c flag prevents the compiler linking object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(OBJ_OUTPUT_OPTIONS) $<
 

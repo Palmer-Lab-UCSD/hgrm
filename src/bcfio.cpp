@@ -71,7 +71,7 @@ const std::unique_ptr<std::string[]> bcfio::BcfHeader::sample_names() const {
     std::unique_ptr<std::string[]> samp_names = 
         std::make_unique<std::string[]>(n_samples()); 
 
-    for (int i = 0; i < n_samples(); i++)
+    for (size_t i = 0; i < n_samples(); i++)
         samp_names[i] = std::string(*(hdr_->samples + i));
 
     return samp_names;
@@ -90,7 +90,7 @@ bcfio::BcfFloatRecord::~BcfFloatRecord() {
 
 std::optional<float> bcfio::BcfFloatRecord::get(const size_t row_idx,
         const size_t col_idx) const {
-    if ((row_idx * col_idx + col_idx) >= ndst_) return std::nullopt;
+    if ((row_idx * col_idx + col_idx) >= size()) return std::nullopt;
 
     return *(dst_ + row_idx * col_idx + col_idx);
 }

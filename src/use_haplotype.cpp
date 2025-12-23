@@ -29,10 +29,14 @@ int compute_haplotype_matrix(Logger *log, bcfio::ReadBcf *bfid, Matrix *cov) {
         for (idx_row = 0; idx_row < n_samples; idx_row++) {
 
             for (idx_hap = 0; idx_hap < k_haps; idx_hap++) {
+
                 if ((val = rec.get(idx_row, idx_hap)) == std::nullopt) {
                     printf("IDX: (%zu, %zu) = null\n", idx_row, idx_hap);
                     return -1;
                 }
+
+                (*cov)(idx_row, idx_row) += val.value();
+
                 printf("%f\t ", val.value());
             }
 

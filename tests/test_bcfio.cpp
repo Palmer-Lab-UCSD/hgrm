@@ -17,7 +17,7 @@ extern "C" {
 char VCF_NAME[] { "build/geno_test_data.vcf" };
 char VCFGZ_NAME[] { "build/geno_test_data.vcf.gz" };
 char BCF_NAME[] { "build/geno_test_data.bcf" };
-int32_t K_FOUNDERS = 8;
+size_t K_FOUNDERS = 8;
 size_t N_SAMPS = 11;
 
 
@@ -253,8 +253,8 @@ TEST(TestBcfHeader, VcfSampNames) {
 
     char samp_name[] = "S01";
 
-    for (int i = 0; i < hdr.n_samples(); i++) {
-        snprintf(samp_name, 4, "S%02d", i+1);
+    for (size_t i = 0; i < hdr.n_samples(); i++) {
+        snprintf(samp_name, 4, "S%02zu", i+1);
         EXPECT_STREQ(s[i].c_str(), samp_name);
     }
 }
@@ -268,8 +268,8 @@ TEST(TestReadBcf, VcfGzSampNames) {
 
     char samp_name[] = "S01";
 
-    for (int i = 0; i < hdr.n_samples(); i++) {
-        snprintf(samp_name, 4, "S%02d", i+1);
+    for (size_t i = 0; i < hdr.n_samples(); i++) {
+        snprintf(samp_name, 4, "S%02zu", i+1);
         EXPECT_STREQ(s[i].c_str(), samp_name);
     }
 }
@@ -283,8 +283,8 @@ TEST(TestReadBcf, BcfSampNames) {
 
     char samp_name[] = "S01";
 
-    for (int i = 0; i < hdr.n_samples(); i++) {
-        snprintf(samp_name, 4, "S%02d", i+1);
+    for (size_t i = 0; i < hdr.n_samples(); i++) {
+        snprintf(samp_name, 4, "S%02zu", i+1);
         EXPECT_STREQ(s[i].c_str(), samp_name);
     }
 }
@@ -298,7 +298,7 @@ TEST(TestReadBcf, BcfSampNames) {
 TEST(TestBcfFloatRecord, Constructor) {
     bcfio::BcfFloatRecord brec {};
 
-    EXPECT_EQ(brec.size(), 0);
+    EXPECT_EQ(brec.size(), static_cast<size_t>(0));
     EXPECT_EQ(brec.get(1, 3), std::nullopt);
 }
 

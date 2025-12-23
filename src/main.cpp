@@ -58,15 +58,26 @@ int main(int argc, char* argv[])
             " include a single sample filename, and if necessary file system"
             " path, per line.");
 
-    parser.add_arg("--use_genotypes",
+    parser.add_arg("--gt",
             argparse::ArgType::BOOLEAN,
             "Use sample genotypes to compute the relationship matrix");
 
-    parser.add_arg("--use_both",
+    parser.add_arg("--eac",
             argparse::ArgType::BOOLEAN,
-            "Use both genotypes and haplotypes to compute relationship matrix");
+            "Use sample expected alt allele count to compute the"
+            " relationship matrix");
 
-    parser.add_arg("vcf",
+    parser.add_arg("-b",
+            argparse::ArgType::BOOLEAN,
+            "Use both the expected alternative allele and haplotype counts to"
+            " compute relationship matrix");
+
+    parser.add_arg("--loco",
+            argparse::ArgType::STRING,
+            "Directory with chromosome matrix files to compute the"
+            " leave-one-chromosome-out (LOCO) relationship matrix.")
+
+    parser.add_arg("--vcf",
             argparse::ArgType::STRING, 
             "the path and filename of the vcf in which the hgrm is computed.");
 
@@ -101,20 +112,27 @@ int main(int argc, char* argv[])
 
     
     std::optional<bool> tmp_bool {};
-    if ((tmp_bool = parser.get<bool>("use_genotypes")) == std::nullopt) {
+    if ((tmp_bool = parser.get<bool>("gt")) == std::nullopt) {
         fprintf(stderr, "Error retrieving relationship matrix type.\n");
         exit(EXIT_FAILURE);
     }
-    bool use_genotypes { tmp_bool.value() };
+    bool use_gt { tmp_bool.value() };
 
-    if ((tmp_bool = parser.get<bool>("use_both")) == std::nullopt) {
+    if ((tmp_bool = parser.get<bool>("b")) == std::nullopt) {
         fprintf(stderr, "Error retrieving relationship matrix type.\n");
         exit(EXIT_FAILURE);
     }
     bool use_both { tmp_bool.value() };
 
-    if (use_genotypes && use_both) {
-        fprintf(stderr, "user must specify either use_genotypes, use_both,"
+    if ((tmp_bool = parser.get<bool>("eac")) == std::nullopt) {
+        fprintf(stderr, "Error retrieving relationship matrix type.\n");
+        exit(EXIT_FAILURE);
+    }
+    bool use_eac { tmp_bool.value() };
+
+
+    if ((use_gt && use_both) || (use_gt && use_ds) || (use_both && use_ds)) {
+        fprintf(stderr, "user must specify either use_gt, use_both, use_ds,"
                 " or omit both options to compute the haplotype based"
                 " relationship matrix.");
         exit(EXIT_FAILURE);
@@ -136,11 +154,15 @@ int main(int argc, char* argv[])
     bcfio::ReadBcf bfid { vcf_fname.c_str() };
     Matrix cov { bfid.n_samples(), bfid.n_samples() };
 
-    if (use_genotypes) {
+    if (use_gt) {
         log.info("Relationship matrix: genotype");
         status = compute_genotype_matrix();
+    } else if (use_ds) {
+        log.info("Relationship matrix: expected alt allele count
+        status = compute_eac_matrix();
     } else if (use_both) {
-        log.info("Relationship matrix: genotype and haplotype");
+        log.info("Relationship matrix: expected alt allele and haplotype"
+                " counts");
         status = compute_geno_and_haplo_matrix();
     } else {
         log.info("Relationship matrix: haplotype");
