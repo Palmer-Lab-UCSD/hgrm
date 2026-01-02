@@ -40,137 +40,161 @@ int main(int argc, char* argv[])
     // }
 
     argparse::ArgParser parser {
-        "hgrm: Haplotype Genetic Relationship Matrix",
-        "This program computes the haplotype genetic relationship matrix"
-        " from the expected haplotype counts per locus per sample and stored"
-        " as a text file in the variant call format (VCF)."
+        "grm: Genetic Relationship Matrix",
+        "This program provides tools for computing the genetic relationship"
+        " matrix (GRM) and the leave-one-chromosome-out (LOCO) matrices for"
+        " linear mixed effect based association studies.  The GRM may be"
+        " computed using called genotypes, expected alternative allele counts,"
+        " expected haplotype counts, or both expected alternative allele"
+        " and haplotype counts.  By default the expected alternative allele"
+        " counts are used."
     };
 
-    parser.add_arg("-o", 
+    argparse::CmdDef *contig_cmd = parser.add_cmd("contig");
+
+    contig_cmd->add_arg("-o", 
             argparse::ArgType::STRING,
             "the path and filename that the resulting haplotype genetic"
             " relationship matrix is printed.");
 
-    parser.add_arg("--sample_names",
+    contig_cmd->add_arg("--sample_names",
             argparse::ArgType::STRING,
             "The path and name of the file containing sample names to be"
             " included in computing the relationship matrix.  The file must"
             " include a single sample filename, and if necessary file system"
             " path, per line.");
 
-    parser.add_arg("--gt",
+    contig_cmd->add_arg("--gt",
             argparse::ArgType::BOOLEAN,
             "Use sample genotypes to compute the relationship matrix");
 
-    parser.add_arg("--eac",
+    contig_cmd->add_arg("--ehc",
             argparse::ArgType::BOOLEAN,
-            "Use sample expected alt allele count to compute the"
-            " relationship matrix");
+            "Use sample expected haplotype count to compute the the genetic"
+            " relationship matrix.");
 
-    parser.add_arg("-b",
+    contig_cmd->add_arg("-b",
             argparse::ArgType::BOOLEAN,
             "Use both the expected alternative allele and haplotype counts to"
-            " compute relationship matrix");
+            " compute the genetic relationship matrix");
 
-    parser.add_arg("--loco",
-            argparse::ArgType::STRING,
-            "Directory with chromosome matrix files to compute the"
-            " leave-one-chromosome-out (LOCO) relationship matrix.")
-
-    parser.add_arg("--vcf",
+    contig_cmd->add_arg("bcf",
             argparse::ArgType::STRING, 
-            "the path and filename of the vcf in which the hgrm is computed.");
-
-    if (parser.parse_args(argc, argv) != argparse::ArgStatus::SUCCESS) {
-        fprintf(stderr, "Error: couldn't parse command line args, exiting\n");
-        exit(EXIT_FAILURE);
-    }
-
-    // TODO: Update below to use logger
-    //
-    std::optional<std::string> tmp_str {};
-    if((tmp_str = parser.get<std::string>("vcf")) == std::nullopt) {
-        fprintf(stderr, "Error retrieving vcf name");
-        exit(EXIT_FAILURE);
-    }
-    std::string vcf_fname { tmp_str.value() };
-
-    if ((tmp_str = parser.get<std::string>("o")) == std::nullopt) {
-        fprintf(stderr, "Error retrieving output name");
-        exit(EXIT_FAILURE);
-    }
-    std::string out_fname { tmp_str.value() };
-
-    if (out_fname.size() == 0)
-        out_fname = vcf_fname + ".mat";
-
-    if ((tmp_str = parser.get<std::string>("sample_names")) == std::nullopt) {
-        fprintf(stderr, "Error retrieving sample_names file.\n");
-        exit(EXIT_FAILURE);
-    }
-    std::string samp_fname { tmp_str.value() };
-
-    
-    std::optional<bool> tmp_bool {};
-    if ((tmp_bool = parser.get<bool>("gt")) == std::nullopt) {
-        fprintf(stderr, "Error retrieving relationship matrix type.\n");
-        exit(EXIT_FAILURE);
-    }
-    bool use_gt { tmp_bool.value() };
-
-    if ((tmp_bool = parser.get<bool>("b")) == std::nullopt) {
-        fprintf(stderr, "Error retrieving relationship matrix type.\n");
-        exit(EXIT_FAILURE);
-    }
-    bool use_both { tmp_bool.value() };
-
-    if ((tmp_bool = parser.get<bool>("eac")) == std::nullopt) {
-        fprintf(stderr, "Error retrieving relationship matrix type.\n");
-        exit(EXIT_FAILURE);
-    }
-    bool use_eac { tmp_bool.value() };
+            "The path and filename of the genetic data to compute the GRM. The"
+            " data may be in any of the htslib supported formats, i.e. vcf,"
+            " vcf.gz, or bcf.");
 
 
-    if ((use_gt && use_both) || (use_gt && use_ds) || (use_both && use_ds)) {
-        fprintf(stderr, "user must specify either use_gt, use_both, use_ds,"
-                " or omit both options to compute the haplotype based"
-                " relationship matrix.");
-        exit(EXIT_FAILURE);
-    }
+    argparse::CmdDef *loco_cmd = parser.add_cmd("loco");
+    loco_cmd->add_arg("filename",
+            argparse::ArgType::STRING,
+            "Name, and path, of file that stores the name and paths of matrix"
+            " files used to compute leave-one-chromosome-out (LOCO) relationship"
+            " matrix.");
+
 
 
     Logger log {};
-    
-    log.info("BCF/VCF file name: %s", vcf_fname.c_str());
-    if (samp_fname.size() == 0)
-        log.info("Sample file: None, use all samples");
-    else
-        log.info("Sample file: %s", samp_fname.c_str());
-
-    log.info("Output matrix file: %s", out_fname.c_str());
-
     int status = FAILED_CALC;
+    argparse::ArgStatus arg_status = parser.parse_args(argc, argv);
 
-    bcfio::ReadBcf bfid { vcf_fname.c_str() };
-    Matrix cov { bfid.n_samples(), bfid.n_samples() };
+    // PARSE ARGUMENTS
+    if (arg_status == argparse::ArgStatus::HELP)
+        return 0;
 
-    if (use_gt) {
-        log.info("Relationship matrix: genotype");
-        status = compute_genotype_matrix();
-    } else if (use_ds) {
-        log.info("Relationship matrix: expected alt allele count
-        status = compute_eac_matrix();
-    } else if (use_both) {
-        log.info("Relationship matrix: expected alt allele and haplotype"
-                " counts");
-        status = compute_geno_and_haplo_matrix();
-    } else {
-        log.info("Relationship matrix: haplotype");
-        status = compute_haplotype_matrix(&log, &bfid, &cov);
+    if (arg_status != argparse::ArgStatus::SUCCESS) {
+        log.error("Error: couldn't parse command line args, exiting\n");
+        exit(EXIT_FAILURE);
     }
 
-    if (status == FAILED_CALC)
-        log.error("Computation failed");
+    // EXTRACT ARGS
+    if (parser.is_sub_cmd("contig")) {
+
+        std::optional<std::string> tmp_str {};
+        if((tmp_str = parser.get<std::string>("bcf")) == std::nullopt) {
+            log.error("Error retrieving vcf name");
+            exit(EXIT_FAILURE);
+        }
+        std::string bcf_fname { tmp_str.value() };
+
+        if ((tmp_str = parser.get<std::string>("o")) == std::nullopt) {
+            log.error("Error retrieving output name");
+            exit(EXIT_FAILURE);
+        }
+        std::string out_fname { tmp_str.value() };
+
+        if (out_fname.size() == 0)
+            out_fname = bcf_fname + ".mat";
+
+        if ((tmp_str = parser.get<std::string>("sample_names")) == std::nullopt) {
+            log.error("Error retrieving sample_names file.\n");
+            exit(EXIT_FAILURE);
+        }
+        std::string samp_fname { tmp_str.value() };
+
+        
+        std::optional<bool> tmp_bool {};
+        if ((tmp_bool = parser.get<bool>("gt")) == std::nullopt) {
+            log.error("Error retrieving relationship matrix type.\n");
+            exit(EXIT_FAILURE);
+        }
+        bool use_gt { tmp_bool.value() };
+
+        if ((tmp_bool = parser.get<bool>("ehc")) == std::nullopt) {
+            log.error("Error retrieving relationship matrix type.\n");
+            exit(EXIT_FAILURE);
+        }
+        bool use_ehc { tmp_bool.value() };
+
+        if ((tmp_bool = parser.get<bool>("b")) == std::nullopt) {
+            log.error("Error retrieving relationship matrix type.\n");
+            exit(EXIT_FAILURE);
+        }
+        bool use_both { tmp_bool.value() };
+
+
+
+        if ((use_gt && use_both) || (use_gt && use_ehc) || (use_both && use_ehc)) {
+            log.error("user must specify either use_gt, use_both, use_ds,"
+                    " or omit both options to compute the haplotype based"
+                    " relationship matrix.");
+            exit(EXIT_FAILURE);
+        }
+    
+        log.info("BCF/VCF file name: %s", bcf_fname.c_str());
+        if (samp_fname.size() == 0)
+            log.info("Sample file: None, use all samples");
+        else
+            log.info("Sample file: %s", samp_fname.c_str());
+
+        log.info("Output matrix file: %s", out_fname.c_str());
+
+
+        bcfio::ReadBcf bfid { bcf_fname.c_str() };
+        Matrix cov { bfid.n_samples(), bfid.n_samples() };
+
+        if (use_gt) {
+            log.info("Relationship matrix: genotype");
+            status = compute_genotype_matrix();
+        } else if (use_ehc) {
+            log.info("Relationship matrix: expected haplotype count");
+            status = compute_ehc_matrix(&log, &bfid, &cov);
+        } else if (use_both) {
+            log.info("Relationship matrix: expected alt allele and haplotype"
+                    " counts");
+            status = compute_eac_and_ehc_matrix();
+        } else {
+            log.info("Relationship matrix: expected alternative allele counts");
+            status = compute_eac_matrix();
+        }
+
+        if (status == FAILED_CALC)
+            log.error("Computation failed");
+
+    }
+
+    if (parser.is_sub_cmd("loco"))
+        printf("loco selected\n");
 
 
     return status;

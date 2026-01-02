@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <ctime>
 #include <cstring>
+#include <cstdarg>
+
 
 class Logger {
 public:
@@ -14,20 +16,19 @@ public:
     // TODO: right now only accepts a single msg string, I should make
     // this arbitrary message elements using va_list, this makes the
     // interface match that of sprintf
-    int info(const char *format, const char *msg);
-    int warn(const char *format, const char *msg);
-    int error(const char *format, const char *msg);
+    int info(const char *format, ...);
+    int warn(const char *format, ...);
+    int error(const char *format, ...);
     
-    int info(const char *msg);
-    int warn(const char *msg);
-    int error(const char *msg);
+    // int info(const char *msg);
+    // int warn(const char *msg);
+    // int error(const char *msg);
 
 private:
     time_t t_;
     tm *time_point_;
 
-    int msg_len_ { 0 };
-    size_t time_len_ { 0 };
+    int status_ { 0 };
 
     static constexpr size_t time_buf_len_ { 30 };
     static constexpr size_t str_buf_len_ { 500 };
@@ -40,8 +41,10 @@ private:
     static constexpr char warn_str_[] = { "WARN" };
     static constexpr char info_str_[] = { "INFO" };
     
-    int print_(FILE *stream, const char *log_type, 
-            const char *format, const char *msg);
+    int load_time_buf_();
+    void empty_bufs_();
+    void vprintf_(FILE *stream, const char *log_type, 
+            const char *format, va_list arg_ptr);
 };
 
 #endif

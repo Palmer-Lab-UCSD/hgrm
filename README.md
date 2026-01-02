@@ -3,23 +3,32 @@
 # Compute the genetic relationship matrix using expected haplotype counts
 
 
-
-The genetic relationship matrix (GRM) is the covariance between samples over
-the measured genetic markers.  It's utility is in accounting for 
-relatedness among samples, as random effects in a Linear Mixed Effects
-Model, when performing a Genome Wide Association Study (GWAS) [1,2] and computing
-the heritability of complex traits [3].  The GRM is traditionally computed using
-SNP genotypes, but here we are interested in haplotype based covariance.
+The genetic relationship matrix (GRM) describes the genetic relationship between
+pairs of samples.  WRITE MORE
 
 
-## Running the software
 
-The program is ran by supplying the path and filename of a VCF.  Note, as 
-of now this software does not support data streams with UNIX pipe or
-bgzip, gzip, etc. compression.  The output is printed to standard out.
+
+## Compute the genetic relationship matrix
+
+The GRM calculation requires the SNPs or haplotypes to jbe in the bcf family
+of file formats, i.e. vcf, vcf.gz, or bcf.  By default, the GRM is computed
+using the expected haplotype counts with FORMAT ID = "HD".
 
 ```
-hgrm path/to/my_vcf > grm
+grm chrm <chrm_id> <path/to/my/snps.bcf>
+```
+
+will produce a binary `.mat` file that stores the GRM and relavent meta data.
+Other options include
+
+
+
+
+## Compute LOCO matrices
+
+```
+grm loco path/to/file/with/grm_filename_and_path_per_line
 ```
 
 
@@ -27,26 +36,10 @@ hgrm path/to/my_vcf > grm
 
 The program is only available as source from this repository and requires
 
-* `cmake` (>= 3.31.4)
-* `make` 
+* `GNU make` 
+* `htslib`
 * `clang` or `gcc` C++17 compiler
 
-To install navigate to the top level directory of this repository,
-and make the `build` directory
-```bash
-mkdir build
-```
-then use `cmake` to generate `make` files, etc.,
-```bash
-cmake -S . -B build/
-```
-followed by navigating to the build directory and running GNU `make`
-```bash
-make
-```
-In the build directory you should now have a binary file called `hgrm`,
-this is the executable program.  Move it to a directory in your
-shell's search path.
 
 
 ## Contributing
@@ -55,13 +48,8 @@ I am using [GoogleTest](https://google.github.io/googletest/) framework
 for organizing tests.  If you contribute, please make tests for your
 contributions.  To run tests, `build` directory and build the project
 ```
-cmake -S ../ -B .
-make
-```
-Then use `cmake`'s utility
-```
-ctest
-```
+make check
+
 
 ## Acknowledgement
 

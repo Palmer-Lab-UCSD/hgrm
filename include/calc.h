@@ -10,9 +10,11 @@
 
 int compute_genotype_matrix();
 
-//
-int compute_haplotype_matrix(Logger *log, bcfio::ReadBcf *bfid, Matrix *cov);
+int compute_eac_matrix();
 
-int compute_geno_and_haplo_matrix();
+//
+int compute_ehc_matrix(Logger *log, bcfio::ReadBcf *bfid, Matrix *cov);
+
+int compute_eac_and_ehc_matrix();
 
 #endif

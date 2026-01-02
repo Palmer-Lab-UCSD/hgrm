@@ -1,3 +1,4 @@
+// Compute GRM with called genotypes
 
 #include <calc.h>
 
