@@ -1,13 +1,13 @@
 
 #include <gtest/gtest.h>
-#include <matrix.h>
+#include <grm.h>
 #include <cstddef>
 
 
-TEST(TestMatrix, Init) {
+TEST(TestGrm, Init) {
     size_t n_row { 3 };
     size_t m_col { 2 };
-    Matrix a { n_row, m_col };
+    Grm a { n_row, m_col };
     std::array<size_t, 2> dims { a.dims() };
     EXPECT_EQ(dims[0], n_row);
     EXPECT_EQ(dims[1], m_col);
@@ -21,27 +21,27 @@ TEST(TestMatrix, Init) {
     EXPECT_THROW({
             size_t n_row = 0;
             size_t m_col = 2;
-            Matrix b(n_row, m_col);
+            Grm b(n_row, m_col);
             },
             std::runtime_error);
 
     EXPECT_ANY_THROW({
             size_t n_row = -1;
             size_t m_col = 2;
-            Matrix b(n_row, m_col);
+            Grm b(n_row, m_col);
             });
 
-    EXPECT_THROW({Matrix b(1, 0);}, std::runtime_error);
-    EXPECT_ANY_THROW({Matrix b(1, -1);});
+    EXPECT_THROW({Grm b(1, 0);}, std::runtime_error);
+    EXPECT_ANY_THROW({Grm b(1, -1);});
 }
 
 
 
-TEST(TestMatrix, Vals) {
+TEST(TestGrm, Vals) {
     size_t n_row { 3 };
     size_t m_col { 5 };
 
-    Matrix a { n_row, m_col };
+    Grm a { n_row, m_col };
     
     std::array<size_t, 2> dims { a.dims() };
 
@@ -57,11 +57,11 @@ TEST(TestMatrix, Vals) {
 }
 
 
-TEST(TestMatrix, OutOfBounds) {
+TEST(TestGrm, OutOfBounds) {
     size_t n_row { 3 };
     size_t m_col { 5 };
     
-    Matrix a { n_row, m_col };
+    Grm a { n_row, m_col };
 
     EXPECT_THROW({ a(4, 3); }, std::runtime_error);
     EXPECT_THROW({ a(3, 5); }, std::runtime_error);
@@ -72,11 +72,11 @@ TEST(TestMatrix, OutOfBounds) {
 }
 
 
-TEST(TestMatrix, DimAndSize) {
+TEST(TestGrm, DimAndSize) {
     size_t n_row { 3 };
     size_t m_col { 5 };
     
-    Matrix a { n_row, m_col };
+    Grm a { n_row, m_col };
     
     std::array<size_t, 2> dims { a.dims() };
     EXPECT_EQ(dims[0], n_row);

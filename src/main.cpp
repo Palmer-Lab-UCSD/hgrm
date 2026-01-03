@@ -21,7 +21,7 @@
 
 #include <logger.h>
 #include <calc.h>
-#include <matrix.h>
+#include <grm.h>
 
 
 #define FAILED_CALC -1
@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
 
 
         bcfio::ReadBcf bfid { bcf_fname.c_str() };
-        Matrix cov { bfid.n_samples(), bfid.n_samples() };
+        Grm cov { bfid.n_samples(), bfid.n_samples() };
 
         if (use_gt) {
             log.info("Relationship matrix: genotype");
@@ -193,7 +193,7 @@ int main(int argc, char* argv[])
 
         log.info("Writing to file");
 
-        grmio::write( cov);
+        cov.write(out_fname);
     }
 
     if (parser.is_sub_cmd("loco"))

@@ -16,7 +16,7 @@
 #include <string>
 #include <array>
 
-#include <matrix.h>
+#include <grm.h>
 
 namespace htslib {
 extern "C" {

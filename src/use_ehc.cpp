@@ -2,7 +2,7 @@
 
 #include <calc.h>
 
-int compute_ehc_matrix(Logger *log, bcfio::ReadBcf *bfid, Matrix *cov) {
+int compute_ehc_matrix(Logger *log, bcfio::ReadBcf *bfid, Grm *cov) {
 
     int output_status = 0;
 

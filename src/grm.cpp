@@ -13,15 +13,15 @@
 //
 //
 
-#include <matrix.h>
+#include <grm.h>
 
 // default constructor
-Matrix::Matrix(const size_t nrow, const size_t mcol)
+Grm::Grm(const size_t nrow, const size_t mcol)
     : nrow_(nrow), mcol_(mcol), 
     data_(nrow_ > 0 &&  mcol_ > 0 ? std::make_unique<double[]>(size()) : nullptr) {
     
         if (nrow_ == 0 || mcol_ == 0)
-            throw std::runtime_error("Matrix must have minimum size of 1");
+            throw std::runtime_error("Grm must have minimum size of 1");
 
         // set default values to zero
         for (size_t i = 0; i < size(); i++)
@@ -31,34 +31,34 @@ Matrix::Matrix(const size_t nrow, const size_t mcol)
 
 // copy constructor
 //
-Matrix::Matrix(const Matrix& other) 
+Grm::Grm(const Grm& other) 
     : nrow_(other.nrow_), mcol_(other.mcol_),
     data_(std::make_unique<double[]>(other.size())) {
 
-        // Matrix values have already been validated
+        // Grm values have already been validated
         for (size_t i = 0; i < size(); i++)
             data_[i] = other.data_[i];
 }
 
 // TODO: check this.
-Matrix::Matrix(Matrix&& other) 
+Grm::Grm(Grm&& other) 
     : nrow_(other.nrow_), mcol_(other.mcol_), data_(std::move(other.data_)) {};
 
 
-double Matrix::operator()(const size_t& i, const size_t& j) const {
+double Grm::operator()(const size_t& i, const size_t& j) const {
     return data_[mat_idx_to_array_(i, j)];
 }
 
-double& Matrix::operator()(const size_t& i, const size_t& j) {
+double& Grm::operator()(const size_t& i, const size_t& j) {
     return data_[mat_idx_to_array_(i, j)];
 }
 
-std::array<size_t,2> Matrix::dims() const {
+std::array<size_t,2> Grm::dims() const {
     return {nrow_, mcol_};
 }
 
 
-size_t Matrix::mat_idx_to_array_(const size_t& i, const size_t& j) const {
+size_t Grm::mat_idx_to_array_(const size_t& i, const size_t& j) const {
     if (i >= nrow_ || j >= mcol_)
         throw std::runtime_error("Indices must be postive integers or zero.");
 
@@ -66,4 +66,16 @@ size_t Matrix::mat_idx_to_array_(const size_t& i, const size_t& j) const {
 }
 
 
-size_t Matrix::size() const { return nrow_ * mcol_; };
+size_t Grm::size() const { return nrow_ * mcol_; };
+
+int Grm::write(const std::string& filename) const {
+    return -1;
+}
+
+int Grm::write(const char *filename) const {
+    return -1;
+}
+
+int Grm::read(const char *filename, Grm *grm) {
+    return -1;
+}
