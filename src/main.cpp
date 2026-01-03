@@ -191,6 +191,9 @@ int main(int argc, char* argv[])
         if (status == FAILED_CALC)
             log.error("Computation failed");
 
+        log.info("Writing to file");
+
+        grmio::write( cov);
     }
 
     if (parser.is_sub_cmd("loco"))
