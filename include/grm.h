@@ -16,10 +16,100 @@
 
 #include <cstdio>
 #include <cstddef>
-#include <stdexcept>
+#include <cstdlib>
+#include <cstring>
+#include <cctype>
 #include <memory>
-#include <array>
 #include <utility>
+
+
+namespace grm {
+
+namespace details {
+
+// @title: Count the number of non empty lines in text file
+//
+// @param fid: pointer to C file stream, i.e. that returned by fopen
+// @param num_lines: the number of lines written at this address
+// @return  -1: file I/O error as determined by ferror(fid), or
+//          -2: end of file not reached, reason undetermined, or
+//          -3: error in returning file handle to beginning of file
+//           0: success
+int num_lines_in_file(FILE *fid, size_t *num_lines);
+
+
+int chars_to_size_t(FILE *fid, size_t *val);
+
+}
+
+
+enum class STATUS { 
+    SUCCESS, 
+    FAILED, 
+    UNKNOWN_FAILURE,
+    ERROR_IDX_ARR_BOUNDS,
+    ERROR_FOPEN,
+    ERROR_EOF_NOT_REACHED,
+    ERROR_ON_WRITE,
+};
+
+
+struct Dims {
+    Dims(size_t nrow_in, size_t mcol_in): 
+        nrow(nrow_in), mcol(mcol_in) {};
+
+    const size_t nrow;
+    const size_t mcol;
+};
+
+
+// @title: Store genomic coordinates and mange binary I/O
+// @description: 
+struct Coordinates {
+
+    // @param pos_filename: The name, and path if necessary, of the text
+    //      file specifying variant positions on the specified contig 
+    //      to be included for the grm.
+    // @param contig_name: The name of the contig, e.g. chrm1
+    //
+    Coordinates(const char *contig_name, const size_t len);
+    Coordinates(const std::string& contig_name, const size_t len);
+
+    size_t operator[](size_t idx) const;
+    size_t& operator[](size_t idx);
+
+    STATUS write(FILE *fid);
+    static STATUS read(FILE *fid, Coordinates *coords);
+
+    const size_t len;
+    const std::string contig;
+    std::unqiue_ptr<size_t> *pos;
+};
+
+
+struct Samples {
+    Samples(const char *sample_filename);
+    Samples(const std::string sample_filename);
+
+    const std::string filename;
+    const size_t len;
+    std::unique_ptr<std::string> *names;
+
+    STATUS bin_write(FILE *fid);
+    static STATUS bin_read(FILE *fid, Samples *samples);
+}
+
+
+struct Hdr {
+    const std::string version;
+    const std::string data_type;
+    const Coordinates *coords;
+    const Samples *samples;
+
+    STATUS bin_write(FILE *fid);
+    static STATUS bin_read(FILE *fid, Hdr *hdr);
+
+}
 
 
 class Grm {
@@ -30,24 +120,26 @@ public:
     Grm& operator=(const Grm&)=delete;        // copy assignment
     Grm& operator=(Grm&&)=delete;             // move assignment
                                             
+    // Unchecked indexes when setting and getting of matrix values
+    float operator()(const size_t i, const size_t j) const;
+    float& operator()(const size_t i, const size_t j);
 
-    double operator()(const size_t&, const size_t&) const;
-    double& operator()(const size_t&, const size_t&);
+    // Checked indexes when setting and getting of matrix values
+    STATUS set(const size_t i, const size_t j, const float val); 
+    STATUS get(const size_t i, const size_t j, float *val) const; 
 
     size_t size() const;
-    std::array<size_t,2> dims() const;
+    const Dims& dims() const;
 
-    int write(const char *filename) const;
-    int write(const std::string& filename) const;
-    static int read(const char *filename, Grm *grm);
-    static int read(const std::string& filename, Grm *grm);
+    STATUS write(const char *filename, const char Hdr *hdr) const;
+    static STATUS read(const char *filename, Grm *grm);
 
 private:
-    const size_t nrow_;
-    const size_t mcol_;
-    std::unique_ptr<double[]> data_;
-    size_t mat_idx_to_array_(const size_t&, const size_t&) const;
+    const Dims dims_;
+    std::unique_ptr<float[]> data_;
+    size_t midx_to_arr_(const size_t&, const size_t&) const;
 };
 
+}
 
 #endif
