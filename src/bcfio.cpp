@@ -131,36 +131,24 @@ bcfio::ReadBcf::ReadBcf(const char *bcfname)
     hdr_(fid_) {};
 
 
-// TODO: subset samples by those in sample_fname file
-bcfio::ReadBcf::ReadBcf(const char *bcfname, const char *sample_fname)
-    : fname_(bcfname),
-    fid_(htslib::hts_open(bcfname, "r")),
-    hdr_(fid_) {
-
-    int status { 0 };
-    // Subset samples with those found in the file sample_fname 
-    if (!sample_fname || *sample_fname == '\0')
-        fprintf(stdout, "No file with sample names detected, retreiving"
-                " records for all samples.\n");
-    else
-        status = hdr_.subset_samples(sample_fname);
-
-    if (status < 0) {
-        fprintf(stderr, "Error: Couldn't read sample file\n");
-        exit(EXIT_FAILURE);
-    } else if (status > 0) {
-        fprintf(stderr, "Error: A subset of samples in sample file are not"
-                " found in the VCF,BCF, or VCF.GZ file.\n");
-        exit(EXIT_FAILURE);
-    }
-
-
-    // get number of characters in data record for line buffer size
-};
-
 bcfio::ReadBcf::~ReadBcf() {
     if (fid_) htslib::hts_close(fid_);
 }
+
+
+// TODO: subset samples by those in sample_fname file
+int bcfio::ReadBcf::set_samples(const char *sample_fname) {
+
+    int status { 0 };
+    // Subset samples with those found in the file sample_fname 
+    if (!sample_fname || *sample_fname == '\0') {
+        fprintf(stdout, "No file with sample names detected, retreiving"
+                " records for all samples.\n");
+        return -1;
+    }
+
+    return hdr_.subset_samples(sample_fname);
+};
 
 
 // title: load next record

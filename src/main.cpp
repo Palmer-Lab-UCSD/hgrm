@@ -130,6 +130,7 @@ int main(int argc, char* argv[])
             log.error("Error retrieving sample_names file.\n");
             exit(EXIT_FAILURE);
         }
+
         std::string samp_fname { tmp_str.value() };
 
         
@@ -162,15 +163,29 @@ int main(int argc, char* argv[])
         }
     
         log.info("BCF/VCF file name: %s", bcf_fname.c_str());
-        if (samp_fname.size() == 0)
-            log.info("Sample file: None, use all samples");
-        else
-            log.info("Sample file: %s", samp_fname.c_str());
-
-        log.info("Output matrix file: %s", out_fname.c_str());
 
 
         bcfio::ReadBcf bfid { bcf_fname.c_str() };
+
+        int bstatus = 0;
+        if (samp_fname.size() == 0)
+            log.info("Sample file: None, use all samples");
+        else if ((bstatus = bfid.set_samples(samp_fname.c_str())) == 0)
+            log.info("Sample file: %s", samp_fname.c_str());
+        else if (bstatus < 0) {
+            log.error("Subsetting by sample file, %s, resulted in error", 
+                    samp_fname.c_str());
+            return -1;
+        } else if (bstatus > 0) {
+            log.error("One or more samples specified in sample file, %s,"
+                    " do not %s", 
+                    samp_fname.c_str(), 
+                    bcf_fname.c_str());
+            return -1;
+        }
+
+        log.info("Output matrix file: %s", out_fname.c_str());
+
         Grm cov { bfid.n_samples(), bfid.n_samples() };
 
         if (use_gt) {

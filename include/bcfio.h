@@ -12,6 +12,7 @@
 #define HEADER_PARSE_HTS_H
 
 #include <cstdlib>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <array>
@@ -29,6 +30,7 @@ extern "C" {
 // const char HAP_CODE[] { "HD" };
 
 namespace bcfio {
+
 
 // @title The meta data on a BCF attribute
 // @description BCF, VCF, and VCF.GZ files hold metadata in the header that
@@ -173,7 +175,6 @@ class ReadBcf
 public:
     // TODO: Review C++ idioms the rule of three and five
     ReadBcf(const char *bcfname);
-    ReadBcf(const char *bcfname, const char *sample_fname);
 
     ReadBcf()=delete; 
     ReadBcf(const ReadBcf&)=delete;
@@ -195,6 +196,8 @@ public:
     // dictionaries in the VCF.  BCF_DT_SAMPLE, provides the index of n
     // that correspondes to the number of samples.
     size_t n_samples() const { return hdr_.n_samples(); };
+
+    int set_samples(const char *filename);
     
     // TODO: sample_names
     const std::unique_ptr<std::string[]> sample_names() const { 
