@@ -139,7 +139,6 @@ bcfio::ReadBcf::~ReadBcf() {
 // TODO: subset samples by those in sample_fname file
 int bcfio::ReadBcf::set_samples(const char *sample_fname) {
 
-    int status { 0 };
     // Subset samples with those found in the file sample_fname 
     if (!sample_fname || *sample_fname == '\0') {
         fprintf(stdout, "No file with sample names detected, retreiving"

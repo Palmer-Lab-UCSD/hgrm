@@ -21,6 +21,7 @@
 #include <cctype>
 #include <memory>
 #include <utility>
+#include <string>
 
 
 namespace grm {
@@ -38,7 +39,7 @@ namespace details {
 int num_lines_in_file(FILE *fid, size_t *num_lines);
 
 
-int chars_to_size_t(FILE *fid, size_t *val);
+// int chars_to_size_t(FILE *fid, size_t *val);
 
 }
 
@@ -83,33 +84,31 @@ struct Coordinates {
 
     const size_t len;
     const std::string contig;
-    std::unqiue_ptr<size_t> *pos;
+    std::unique_ptr<size_t> *pos;
 };
 
 
 struct Samples {
-    Samples(const char *sample_filename);
-    Samples(const std::string sample_filename);
-
-    const std::string filename;
     const size_t len;
-    std::unique_ptr<std::string> *names;
+    std::unique_ptr<char*> names;
 
-    STATUS bin_write(FILE *fid);
-    static STATUS bin_read(FILE *fid, Samples *samples);
-}
+    STATUS write(FILE *fid);
+    static STATUS read(FILE *fid, Samples *samples);
+};
+
+
+STATUS load_samples(const char *filename, Samples *samples);
 
 
 struct Hdr {
-    const std::string version;
+    const std::string program_version;
     const std::string data_type;
     const Coordinates *coords;
     const Samples *samples;
 
     STATUS bin_write(FILE *fid);
     static STATUS bin_read(FILE *fid, Hdr *hdr);
-
-}
+};
 
 
 class Grm {
@@ -131,7 +130,18 @@ public:
     size_t size() const;
     const Dims& dims() const;
 
-    STATUS write(const char *filename, const char Hdr *hdr) const;
+    // @title: Write meta-data and computed grm elements to file
+    // @description: The binary file written contains a header and payload:
+    //      * Header
+    //          - an instance of grm::Header
+    //      * Payload
+    //          - grm data in row major order
+    // @param filename: name of file that the data are written
+    // @param hdr: an instance of grm::Hdr with important meta data
+    // @return grm::STATUS: 
+    //
+    STATUS write(const char *filename, const Hdr *hdr) const;
+
     static STATUS read(const char *filename, Grm *grm);
 
 private:

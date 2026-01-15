@@ -1,67 +1,126 @@
 
 #include <textio.h>
 
-TextIO::TextIO(const char *filename):
-    fname_(filename), 
-    buf_size_(details::DEFAULT_BUF_SIZE), 
-    buf_(new char[buf_size_]) {
-    
-    std::memset(buf_, '\0', buf_size_);
-};
 
 
-TextIO::TextIO(const char *filename, const size_t buf_size):
-    fname_(filename), 
-    buf_size_(buf_size), 
-    buf_(new char[buf_size_]) {
+textio::TextIO::TextIO(FILE *fileid): fid(fileid) {};
 
-    std::memset(buf_, '\0', buf_size_);
-};
+textio::TextIO::~TextIO() {
+    if (fid) {
+        fclose(fid);
+        fid = nullptr;
+    }
+}
+
+textio::TextIO::bseek() { return fseek(fid, 0, SEEK_SET); };
 
 
-int TextIO::num_lines() {
+std::unique_ptr<textio::TextIO> textio::open(const char *filename, 
+        const char *mode) {
 
-    size_t line_num = 0;
-    size_t word_len = 0;
-    int c;
-    while (get_line(fid)) {
-
-        if (c == '\n' && word_len != 0) {
-            line_num++;
-            word_len = 0;
-        } else if (c != '\n')
-            word_len++;
+    FILE *fid = fopen(filename, mode);
+    if (ferror(fid)) {
+        fclose(fid);
+        return nullptr;
     }
 
-    if (ferror(fid))
-        return fseek(fid, 0, SEEK_SET) == 0 ? -1 : -3;
+    std::unique_ptr<textio::TextIO> tio = std::make_unique<textio::TextIO>(fid);
 
-    if (feof(fid) == 0)
-        return fseek(fid, 0, SEEK_SET) == 0 ? -2 : -3;
-
-    *num_lines = line_num;
-    return fseek(fid, 0, SEEK_SET) == 0 ? 0 : -3;
+    return std::move(tio);
 }
 
 
-int get_line(FILE *fid) {
-    int c;
+textio::STATUS wc(textio::TextIO *tio, textio::FileStats *fs) {
+    if (!fs)
+        return textio::INVALID_ARG_ERROR;
+
+    size_t nchar = 0;
+    size_t nwords = 0;
+    size_t nlines = 0;
+    size_t nblanklines = 0;
+
+    size_t word_len = 0;
+
+    FILE *fid = tio->fid;
+
+    int c = '\0';
     while ((c = fgetc(fid)) != EOF) {
 
-        if (c == '\n' && word_len != 0) {
-            line_num++;
-            word_len = 0;
-        } else if (c != '\n')
-            word_len++;
+        switch (c) {
+            case '\n':
+                nlines++;
+
+                if (word_len == 0)
+                    nblanklines++;
+                else {
+                    nwords++;
+                    word_len = 0;
+                }
+                break;
+            case ';':
+            case ':':
+            case ',':
+            case '!':
+            case '?':
+            case '(':
+            case ')':
+            case '\"':
+            case '\t':
+            case ' ':
+                if (word_len == 0)
+                    break;
+
+                nwords++;
+                word_len = 0;
+                
+                break;
+            default:
+                nchar++;
+                word_len++;
+        }
+
+    }
+
+    if (ferror(fid)) {
+        fs = nullptr;
+        return tio->bseek() == 0 ? textio::FERROR : textio::FSEEK_ERROR;
+    }
+
+    if (feof(fid) == 0) {
+        fs = nullptr;
+        return tio->bseek() == 0 ? textio::FEOF_ERROR : textio::FSEEK_ERROR;
+    }
+
+    fs->nchar = nchar;
+    fs->nwords = nwords;
+    fs->nlines = nlines;
+    fs->nblanklines = nblanklines;
+
+    return tio->bseek() ? textio::SUCCESS : textio::FSEEK_ERROR;
+}
+
+
+
+textio::STATUS textio::getline(textio::TextIO *tio, textio::Array<char> *buf) {
+    buf->fill('\0');
+
+    FILE *fid = buf->fid;
+
+    int c = 0;
+    while ((c = fgetc(fid)) != EOF) {
+
+        if (c == '\n') {
+            buf->append('\0');
+            return textio::SUCCESS;
+
+        buf->append(c)
     }
 
     if (ferror(fid))
-        return fseek(fid, 0, SEEK_SET) == 0 ? -1 : -3;
+        return textio::FERROR;
 
     if (feof(fid) == 0)
-        return fseek(fid, 0, SEEK_SET) == 0 ? -2 : -3;
+        return textio::FEOF_ERROR;
 
-    *num_lines = line_num;
-    return fseek(fid, 0, SEEK_SET) == 0 ? 0 : -3;
-
+    return textio::SUCCESS;
 }

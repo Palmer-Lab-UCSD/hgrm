@@ -78,7 +78,7 @@ TEST_TARGET_PRG = $(BUILD_DIR)/runtests
 # Executable Build Rules
 ######################################################################
 
-TARGET = $(BUILD_DIR)/hgrm
+TARGET = $(BUILD_DIR)/grm
 
 .PHONY: all
 all: $(TARGET) $(TEST_TARGET_PRG) data
@@ -149,10 +149,10 @@ check:
 
 .PHONY: help
 help:
-	-@echo "build hgrm"
+	-@echo "build grm"
 	-@echo "2025 Palmer Lab"
 	-@echo ""
-	-@echo "make hgrm executable"
+	-@echo "make grm executable"
 	-@echo "make libargparse"
 
 

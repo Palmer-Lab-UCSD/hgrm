@@ -41,23 +41,23 @@ int grm::details::num_lines_in_file(FILE *fid, size_t *num_lines) {
 }
 
 
-int grm::details::get_size_t(FILE *fid, size_t *val) {
-
-    std::string s { "" };
-    while (std::getline(fid, s))
-        if (s.size() < )
-
-    int c;
-    for (int i = 0; (c = fgetc(fid)) != EOF && i < max_bitsize_size_t; i++) {
-        if (c == '\n')
-            break;
-        s[i] = c; 
-    }
-    s[i] = '\0';
-
-    return 0;
-}
-
+// int grm::details::get_size_t(FILE *fid, size_t *val) {
+// 
+//     std::string s { "" };
+//     while (std::getline(fid, s))
+//         if (s.size() < )
+// 
+//     int c;
+//     for (int i = 0; (c = fgetc(fid)) != EOF && i < max_bitsize_size_t; i++) {
+//         if (c == '\n')
+//             break;
+//         s[i] = c; 
+//     }
+//     s[i] = '\0';
+// 
+//     return 0;
+// }
+// 
 
 grm::Coordinates::Coordinates(const char *contig_name): 
     contig(contig_name) {};
