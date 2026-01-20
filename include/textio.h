@@ -21,22 +21,34 @@ enum STATUS {
 };
 
 
-// @title: Parsing text files
+// @title: file object
 // @description: This class manages the lifetime of a C-style file stream
-//      by RAII, line retrieval, and getting line unumber.
+//      by RAII.  To contruct an instance of the class use the "open" function
+//      below.
+// @param fid: an opened C-style file stream
 struct TextIO {
     TextIO(FILE *fid);
-    ~TextIO();
+    ~TextIO() { if (fid) { fclose(fid); fid = nullptr; } };
 
-    int bseek();
+    // Move the current file stream to the beginning of the file.
+    int bseek() { return fseek(fid, 0, SEEK_SET); };
 
     FILE *fid;
 };
 
 
+// @title: open a file and instantiate a TextIO object
+// @description:
+// @param filename: name and path of file to open
+// @param mode: a mode in the set of those in the C library function fopen
+// @return a unique_ptr<TextIO> if the file stream was successfully opened
+//      and TextIO instance created.  Otherwise, return a nullptr.
 std::unique_ptr<TextIO> open(const char *filename, const char *mode);
 
 
+// @title: File statistics
+// @description: This object is returned by any function meant to calculate
+//      file character statistics.
 struct FileStats {
     size_t nchar = 0;
     size_t nwords = 0;
@@ -44,6 +56,15 @@ struct FileStats {
     size_t nblanklines = 0;
 }
 
+
+// @title: word count
+// @description: Similar to the UNIX/Linux wc command line program, wc
+//      calculates the number of characters, words, lines, etc. that
+//      the specified file contains.
+// @param tio: an instance of TextIO
+// @param fs: the structure that the file statistics will be stored
+// @return a STATUS code that specifies whether the function was successful
+//      or failed.
 STATUS wc(TextIO *tio, FileStats *fs);
 
 

@@ -63,38 +63,30 @@ struct Dims {
     const size_t mcol;
 };
 
+struct GrmInfo {
+    virtual void len() = 0;
+    virtual void items() = 0;
+}
 
 // @title: Store genomic coordinates and mange binary I/O
 // @description: 
-struct Coordinates {
-
-    // @param pos_filename: The name, and path if necessary, of the text
-    //      file specifying variant positions on the specified contig 
-    //      to be included for the grm.
-    // @param contig_name: The name of the contig, e.g. chrm1
-    //
-    Coordinates(const char *contig_name, const size_t len);
-    Coordinates(const std::string& contig_name, const size_t len);
-
-    size_t operator[](size_t idx) const;
-    size_t& operator[](size_t idx);
-
-    STATUS write(FILE *fid);
-    static STATUS read(FILE *fid, Coordinates *coords);
-
+struct Coordinates: public GrmInfo {
     const size_t len;
     const std::string contig;
     std::unique_ptr<size_t> *pos;
 };
 
 
-struct Samples {
+struct Samples: public GrmInfo {
     const size_t len;
     std::unique_ptr<char*> names;
-
-    STATUS write(FILE *fid);
-    static STATUS read(FILE *fid, Samples *samples);
 };
+
+
+STATUS write(FILE *fid, const GrmInfo *ginfo);
+
+static STATUS read(FILE *fid, GrmInfo *ginfo);
+
 
 
 STATUS load_samples(const char *filename, Samples *samples);

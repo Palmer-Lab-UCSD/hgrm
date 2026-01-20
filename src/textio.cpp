@@ -5,14 +5,7 @@
 
 textio::TextIO::TextIO(FILE *fileid): fid(fileid) {};
 
-textio::TextIO::~TextIO() {
-    if (fid) {
-        fclose(fid);
-        fid = nullptr;
-    }
-}
 
-textio::TextIO::bseek() { return fseek(fid, 0, SEEK_SET); };
 
 
 std::unique_ptr<textio::TextIO> textio::open(const char *filename, 

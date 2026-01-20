@@ -59,57 +59,9 @@ int grm::details::num_lines_in_file(FILE *fid, size_t *num_lines) {
 // }
 // 
 
-grm::Coordinates::Coordinates(const char *contig_name): 
-    contig(contig_name) {};
+grm::Coordinates::Coordinates(const char *contig, const size_t len):
+    contig(contig), len(len) {}
 
-
-grm::Coordinates::Coordinates(const std::string& contig_name): 
-    contig(contig_name) {};
-
-
-grm::STATUS grm::Coordinates::parse_input_file(const char *pos_filename) {
-
-    fid = fopen(pos_filename, "r");
-    if (ferror(fid))
-        return grm::STATUS::ERROR_FOPEN;
-
-
-    grm::STATUS status { grm::STATUS::UNKNOWN_FAILURE };
-
-    // Use switch the interpret, and act accordingly, to the returned interger 
-    // status code
-    switch (grm::details::num_lines_in_file(fid, &len)) {
-        case -1:
-            return grm::STATUS::ERROR_FOPEN;
-        case -2:
-            return grm::STATUS::ERROR_EOF_NOT_REACHED;
-        case 0:
-            status = grm::STATUS::SUCCESS;
-            break;
-        default:
-            return status;
-    }
-
-    pos = make_unique<size_t[]>(len);
-
-    size_t num_bits_size_t = static_cast<size_t>(CHAR_BIT * sizeof(size_t));
-    std::string s {};
-
-    for (size_t i = 0; i < len; i++) {
-
-
-        if (s.size() >= num_bits_size_t)
-            return STATUS::FAILED;
-
-        pos[i] = static_cast<size_t>(std::strtoull(s));
-    }
-
-    fid
-}
-
-grm::STATUS grm::Coordinates::parse_input_file(const std::string& pos_filename) {
-    return grm::Coordinates::parse_input_file(pos_filename.c_str());
-}
 
 
 // default constructor
