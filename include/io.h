@@ -8,7 +8,7 @@
 #define HEADER_TEXTIO_H
 
 
-namespace textio {
+namespace io {
 
 enum STATUS { 
     SUCCESS,
@@ -21,21 +21,20 @@ enum STATUS {
 };
 
 
+struct FileIO {
+    FileIO(FILE *fid): fid(fid) {}; 
+    ~FileIO() { if (fid) { fclose(fid); fid = nullptr; } };
+
+    FILE *fid;
+};
+
+
 // @title: file object
 // @description: This class manages the lifetime of a C-style file stream
 //      by RAII.  To contruct an instance of the class use the "open" function
 //      below.
 // @param fid: an opened C-style file stream
-struct TextIO {
-    TextIO(FILE *fid);
-    ~TextIO() { if (fid) { fclose(fid); fid = nullptr; } };
-
-    // Move the current file stream to the beginning of the file.
-    int bseek() { return fseek(fid, 0, SEEK_SET); };
-
-    FILE *fid;
-};
-
+int bseek(FileIO *fio);
 
 // @title: open a file and instantiate a TextIO object
 // @description:
@@ -43,7 +42,17 @@ struct TextIO {
 // @param mode: a mode in the set of those in the C library function fopen
 // @return a unique_ptr<TextIO> if the file stream was successfully opened
 //      and TextIO instance created.  Otherwise, return a nullptr.
-std::unique_ptr<TextIO> open(const char *filename, const char *mode);
+FileIO *open(const char *filename, const char *mode) {
+    if (!mode or !filename)
+        return nullptr;
+
+    fid = fopen(filename, mode);
+    if (ferror(fid))
+        return nullptr;
+
+    if (*mode == 'b')
+        return 
+}
 
 
 // @title: File statistics

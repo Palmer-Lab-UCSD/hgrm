@@ -1,17 +1,11 @@
 // Compute the genomic relationship matrix using haplotypes
 //
-// By: Robert Vogel
-// Affiliation: Palmer Lab at UCSD
-// Date: 2025-01-09
+// Palmer Lab at UCSD
 //
-// Input argument
-//    filename: vcf with haplotpye
-//
-// This program performs a single-pass computation of the 
-// haplotype based genomic relationship matrix.  The approach
-// is well defined for the covariance, however under my definition
-// of the haplotype based covariance I had to derive the recursion
-// relations myself.
+// This program performs a single-pass computation of the genetic relationship
+// matrix (GRM, GR matrix).  GR matrices may be constructed using alt allele
+// counts, expected alt allele counts, expected haplotype counts, or a
+// combination of both expected alt allele and haplotype counts.  
 //
 #include <argparse.h>
 #include <cstdio>
@@ -186,7 +180,7 @@ int main(int argc, char* argv[])
 
         log.info("Output matrix file: %s", out_fname.c_str());
 
-        Grm cov { bfid.n_samples(), bfid.n_samples() };
+        grm.Grm cov { bfid.n_samples(), bfid.n_samples() };
 
         if (use_gt) {
             log.info("Relationship matrix: genotype");

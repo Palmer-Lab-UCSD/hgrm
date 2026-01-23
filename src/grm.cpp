@@ -1,11 +1,7 @@
-// MAtrix
-//
-// By: Robert Vogel
-// Affiliation: Palmer Lab at UCSD
-// Date: 2025-01-10
+// Palmer Lab at UCSD
 //
 //
-// Acknowledgment
+// ACKNOWLEDGMENT
 //
 // Code design and original version completed by Robert Vogel,
 // reviewed by Claude Sonnet, the AI assistant from Anthropic
@@ -15,30 +11,30 @@
 
 #include <grm.h>
 
-int grm::details::num_lines_in_file(FILE *fid, size_t *num_lines) {
-    // TODO: errno, need to reset?
-
-    size_t line_num = 0;
-    size_t word_len = 0;
-    int c;
-    while ((c = fgetc(fid)) != EOF) {
-
-        if (c == '\n' && word_len != 0) {
-            line_num++;
-            word_len = 0;
-        } else if (c != '\n')
-            word_len++;
-    }
-
-    if (ferror(fid))
-        return fseek(fid, 0, SEEK_SET) == 0 ? -1 : -3;
-
-    if (feof(fid) == 0)
-        return fseek(fid, 0, SEEK_SET) == 0 ? -2 : -3;
-
-    *num_lines = line_num;
-    return fseek(fid, 0, SEEK_SET) == 0 ? 0 : -3;
-}
+// int grm::details::num_lines_in_file(FILE *fid, size_t *num_lines) {
+//     // TODO: errno, need to reset?
+// 
+//     size_t line_num = 0;
+//     size_t word_len = 0;
+//     int c;
+//     while ((c = fgetc(fid)) != EOF) {
+// 
+//         if (c == '\n' && word_len != 0) {
+//             line_num++;
+//             word_len = 0;
+//         } else if (c != '\n')
+//             word_len++;
+//     }
+// 
+//     if (ferror(fid))
+//         return fseek(fid, 0, SEEK_SET) == 0 ? -1 : -3;
+// 
+//     if (feof(fid) == 0)
+//         return fseek(fid, 0, SEEK_SET) == 0 ? -2 : -3;
+// 
+//     *num_lines = line_num;
+//     return fseek(fid, 0, SEEK_SET) == 0 ? 0 : -3;
+// }
 
 
 // int grm::details::get_size_t(FILE *fid, size_t *val) {
@@ -60,7 +56,7 @@ int grm::details::num_lines_in_file(FILE *fid, size_t *num_lines) {
 // 
 
 grm::Coordinates::Coordinates(const char *contig, const size_t len):
-    contig(contig), len(len) {}
+    contig(contig), len(len), pos(std::make_unique<size_t>(len)) {}
 
 
 
