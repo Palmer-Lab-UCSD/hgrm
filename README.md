@@ -1,12 +1,38 @@
 # 🏗️ Being built 🏗️
 
-# Compute the genetic relationship matrix using expected haplotype counts
+# Compute the genetic relationship matrix
 
 
-The genetic relationship matrix (GRM) describes the genetic relationship between
-pairs of samples.  WRITE MORE
+The genetic relationship matrix (GRM) describes the genetic relationship 
+between pairs of samples.  Its computation is dependent on the random effects
+defined by the linear mixed model mapping genetic features to phenotype.  For
+example, suppose that we are interested in account for polygenic SNP effects
+using measured genotypes.  The LMM is
 
+$$
+Y = x_j\beta + \mathbf{Z}_j U_j + \epsilon
+$$
 
+With $Y$ being a random $N$ sample column vector, $x_j$ is the $N$ sample
+genotype vector at locus $j$, $\mathbf{Z}_j$ is an $N\times M$ marker matrix
+of genotypes that do not include locus $j$, 
+$U_j\sim\mathcal{N}\left(0,\sigma^2_g \mathbf{I}_{M\times M}\right)$
+independent genetic random effects, and 
+$\epsilon\sim\mathcal{N}\left(0,\sigma^2_e\mathbf{I}_{N\times N}\right)$
+independent environmental random effects.  From which it follows that
+
+$$
+\text{cov}(Y) = \sigma^2_g\mathbf{Z}\mathbf{Z}^T
++ \sigma^2_e\mathbf{I}_{N\times N}
+$$
+
+where the genetic component of the phenotype covariance tells us the how
+to compute the GRM, i.e. $\mathbf{Z}\mathbf{Z}^T$.
+
+This program provides the tools to compute the GRM genotypes (alt allele
+count 0,1,2), the expected alt allele count under the imputation model,
+the expected haplotype count, and a combination of the expected alt allele
+count with the expected haplotype count.
 
 
 ## Compute the genetic relationship matrix
