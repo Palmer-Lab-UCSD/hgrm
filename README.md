@@ -8,15 +8,25 @@ between pairs of samples.  Its computation is dependent on the random effects
 defined by the linear mixed model mapping genetic features to phenotype.  For
 example, suppose that we are interested in accounting for polygenic SNP effects
 using measured genotypes.  Let the number of samples be $N$, the number of
-loci genotyped $M+1$, $Y\in\mathbb{R}^{N\times 1}$
+loci with polygenic effects $M$, and the quantiative phenotypes
+$Y\in\mathbb{R}^{N\times 1}$ under the LMM be
+
+$$
+Y = x_j\beta_j + \mathbf{Z}_j U_j + \epsilon.\\
+$$
+
+Here, the fixed effects at locus $j$ are modeled using the alt allele count
+$x_j\in \{0,1,2\}^{N\times 1}$ and fixed effect size $\beta_j$.  The
+random polygenic genetic and environmental effects have properties
 
 $$
 \begin{align}
-Y &= x_j\beta + \mathbf{Z}_j U_j + \epsilon\\
 U_j &\sim \mathcal{N}\left(0, \sigma_g^2 \mathbf{I}_{M\times M}\right)\\
 \epsilon &\sim \mathcal{N}\left(0, \sigma_e^2 \mathbf{I}_{N\times N}\right)
 \end{align}
 $$
+
+and $\mathbf{Z}_j\in\{0,1,2\}^{N\times M}$ is the genotypes of the.
 
 genotype vector at locus $j$, $\mathbf{Z}_j$ is an $N\times M$ genotype matrix
 consisting of a set loci that do not include locus $j$, 
