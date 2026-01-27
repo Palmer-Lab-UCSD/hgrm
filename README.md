@@ -6,16 +6,20 @@
 The genetic relationship matrix (GRM) describes the genetic relationship 
 between pairs of samples.  Its computation is dependent on the random effects
 defined by the linear mixed model mapping genetic features to phenotype.  For
-example, suppose that we are interested in account for polygenic SNP effects
-using measured genotypes.  The LMM is
+example, suppose that we are interested in accounting for polygenic SNP effects
+using measured genotypes.  Let the number of samples be $N$, the number of
+loci genotyped $M+1$, $Y\in\mathbb{R}^{N\times 1}$
 
 $$
-Y = x_j\beta + \mathbf{Z}_j U_j + \epsilon
+\begin{align}
+Y &= x_j\beta + \mathbf{Z}_j U_j + \epsilon\\
+U_j &\sim \mathcal{N}\left(0, \sigma_g^2 \mathbf{I}_{M\times M}\right)\\
+\epsilon &\sim \mathcal{N}\left(0, \sigma_e^2 \mathbf{I}_{N\times N}\right)
+\end{align}
 $$
 
-With $Y$ being a random $N$ sample column vector, $x_j$ is the $N$ sample
-genotype vector at locus $j$, $\mathbf{Z}_j$ is an $N\times M$ marker matrix
-of genotypes that do not include locus $j$, 
+genotype vector at locus $j$, $\mathbf{Z}_j$ is an $N\times M$ genotype matrix
+consisting of a set loci that do not include locus $j$, 
 $U_j\sim\mathcal{N}\left(0,\sigma^2_g \mathbf{I}_{M\times M}\right)$
 independent genetic random effects, and 
 $\epsilon\sim\mathcal{N}\left(0,\sigma^2_e\mathbf{I}_{N\times N}\right)$
