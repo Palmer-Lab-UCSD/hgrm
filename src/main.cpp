@@ -8,8 +8,6 @@
 // combination of both expected alt allele and haplotype counts.  
 //
 #include <argparse.h>
-#include <cstdio>
-#include <cstdlib>
 #include <optional>
 #include <string>
 
