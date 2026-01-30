@@ -19,12 +19,14 @@ The genetic relationship matrix (GRM) describes the genetic relationship
 between pairs of samples.  Its computation is dependent on the random effects
 defined by the linear mixed model mapping genetic features to phenotype.  For
 example, suppose that we are interested in accounting for polygenic SNP effects
-using measured genotypes.  Let the number of samples be $N$, the number of
-loci that contribute to polygenic effects $M$, and the quantiative phenotypes
-of $N$ samples $Y\in\mathbb{R}^{N\times 1}$. Under the LMM [[1]](#refs)
+using measured genotypes.  Let the number of samples be $N$, the set of loci of
+contributing to polygenic effects be $\Omega$ with $|\Omega|= M$, and the
+quantitative phenotypes of $N$ samples $Y\in\mathbb{R}^{N\times 1}$. Note that
+locus $j$ is not a member of the set of loci $\Omega$. Under the
+LMM [[1]](#refs)
 
 $$
-Y = x_j\beta_j + \mathbf{Z}_j U_j + \epsilon.\\
+Y = x_j\beta_j + \mathbf{Z} U + \epsilon.\\
 $$
 
 with the fixed effect at locus $j$ being the alternative allele count, denoted
@@ -33,22 +35,26 @@ random polygenic and environmental effects have properties
 
 $$
 \begin{align}
-U_j &\sim \mathcal{N}\left(0, \sigma_g^2\; \mathbf{I}_{M\times M}\right)\\
-\epsilon &\sim \mathcal{N}\left(0, \sigma_e^2\; \mathbf{I}_{N\times N}\right)
+U &\sim \mathcal{N}\left(0, \sigma_g^2 \; \mathbf{I}_{M\times M}\right)\\
+\epsilon &\sim \mathcal{N}\left(0, \sigma_e^2 \; \mathbf{I}_{N\times N}\right)
 \end{align}
 $$
 
-with $\mathbf{Z}_j\in\{0,1,2\}^{N\times M}$ being the matrix of alt allele
-counts of the $N$ samples and the set of $M$ markers in which locus $j$ is
+with $\mathbf{Z}\in\{0,1,2\}^{N\times M}$ being the matrix of alt allele
+counts of the $N$ samples and and $M$ loci in the set $\Omega$,
 not a member.
 
 Under this model the sample phenotype covariance matrix
 decomposes into genetic and environmental terms
 
 $$
-\text{cov}(Y) = \overbrace{\sigma^2_g\mathbf{Z}\mathbf{Z}^T}^{\text{genetic}}   
+\text{cov}(Y) = \overbrace{
+    \sigma^2_g \; \mathbf{Z}\mathbf{Z}^T
+}^{\text{genetic}} 
 +
-\underbrace{\sigma^2_e\mathbf{I}_{N\times N}}_{\text{Environment}}
+\underbrace{
+    \sigma^2_e \; \mathbf{I}_{N\times N}
+}_{\text{environment}}
 $$
 
 where the genetic component of the phenotype covariance tells us how
@@ -100,8 +106,8 @@ be more appropriate consider the expected alternative allele counts (EAC)
 under the imputation model rather than the imputed genotype calls.
 
 Let $Z_{ik}\in\{0, 1, 2\}$ be an element of the design matrix of random
-polygenic effects for sample $i$ at locus $k\neq j$.  We consider $Z_{ik}$
-to be random as the genotypes are imputed under a probistic model.  This
+polygenic effects for sample $i$ at locus $k\in\Omega$.  We consider $Z_{ik}$
+to be random as the genotypes are imputed under a probistic model. This
 makes the expected value $ \mathbb{E}[Z_{ik} |\mathcal{O} ]$ given the 
 experimentally observed reads the most appropriate genetic signal to
 consider.  Let's call the matrix of conditionally expected alternative
