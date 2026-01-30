@@ -116,20 +116,20 @@ this, the GRM over expected alternative
 allele counts $\mathbf{A}_\text{EAC}$ is
 
 $$
-\mathbf{A}_\text{EAC} =\mathbf{C}\mathbf{C}^T.
+\mathbf{A}_\text{EAC} =\mathbf{C}\mathbf{C}^T
 $$
 
 ### Expected haplotype count GRM
 
-The expected haplotype count GRM, $\mathbf{A}_\text{EHC}$, needs
+The expected haplotype count GRM $\mathbf{A}_\text{EHC}$ needs
 motivation.  The reason is that at each locus there is not a single 
 allele that we are counting, but instead we are counting the
 number of copies of each haplotype $k\in\{1, 2, \dots, K\}$ at any
 specified locus.  Indeed, when $K=2$ we can cast the problem to
 SNP case by identifying one of the two haplotypes as an alternative
 allele. However when $K>2$ the genetic data is no longer a scalar
-but a $K$ dimensional vector $h\in \{0,1,2\}^{K\times 1}$ such that
-$\sum_{k=1}^K h_k=2$.  Moreover, this implies that at each locus $j$
+but a $K$ dimensional vector $h\in \\{0,1,2\\}^{K\times 1}$ such that
+$\sum _{k=1}^K h_k = 2$.  Moreover, this implies that at each locus $j$
 there are $K$ effect sizes, that can be expressed as the column
 vector $\boldsymbol{\beta}_j\in \mathbb{R}^{K\times 1}$.  As we can
 see the haplotype model is more complex as the fixed effects are
@@ -143,11 +143,10 @@ be to account for poly-haplotype effects, that the LMM mapping genotype
 to phenotype at locus $j$ for sample $i$ becomes,
 
 $$
-Y_j = h_{ij}^T\,\boldsymbol{\beta}_j + \mathbf{W}_1U_1
-+ \mathbf{W}_2 U_2
-+ \dots
-+ \mathbf{W}_K U_K
-+ \epsilon_j.
+\begin{equation}
+Y_i = h_{ij}^T\\,\boldsymbol{\beta}_j + \mathbf{W}_1 U_1 + \mathbf{W}_2 U_2 + 
+\dots + \mathbf{W}_K U_K + \epsilon_i.
+\end{equation}
 $$
 
 Here, the difference between the polygenic SNP and haplotype effects
