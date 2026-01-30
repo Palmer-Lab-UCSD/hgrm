@@ -35,8 +35,8 @@ random polygenic and environmental effects have properties
 
 $$
 \begin{align}
-U &\sim \mathcal{N}\left(0, \sigma_g^2 \; \mathbf{I}_{M\times M}\right)\\
-\epsilon &\sim \mathcal{N}\left(0, \sigma_e^2 \; \mathbf{I}_{N\times N}\right)
+U &\sim \mathcal{N}\left(0, \sigma_g^2 \\: \mathbf{I}_{M\times M}\right)\\
+\epsilon &\sim \mathcal{N}\left(0, \sigma_e^2 \\: \mathbf{I}_{N\times N}\right)
 \end{align}
 $$
 
@@ -49,11 +49,11 @@ decomposes into genetic and environmental terms
 
 $$
 \text{cov}(Y) = \overbrace{
-    \sigma^2_g \; \mathbf{Z}\mathbf{Z}^T
+    \sigma^2_g \\; \mathbf{Z}\mathbf{Z}^T
 }^{\text{genetic}} 
 +
 \underbrace{
-    \sigma^2_e \; \mathbf{I}_{N\times N}
+    \sigma^2_e \\; \mathbf{I}_{N\times N}
 }_{\text{environment}}
 $$
 
