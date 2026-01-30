@@ -105,13 +105,14 @@ each sample, as does our method of choice STITCH [[2]](#refs), then it may
 be more appropriate consider the expected alternative allele counts (EAC)
 under the imputation model rather than the imputed genotype calls.
 
-Let $Z_{ik}\in\{0, 1, 2\}$ be an element of the design matrix of random
-polygenic effects for sample $i$ at locus $k\in\Omega$.  We consider $Z_{ik}$
-to be random as the genotypes are imputed under a probistic model. This
-makes the expected value $ \mathbb{E}[Z_{ik} |\mathcal{O} ]$ given the 
-experimentally observed reads the most appropriate genetic signal to
-consider.  Let's call the matrix of conditionally expected alternative
-allele counts $\mathbf{C}$, meaning that the GRM over expected alternative
+Let $Z_{im}\in\{0, 1, 2\}$ be an element of the design matrix of random
+polygenic effects for sample $i$ at locus $m\in\Omega$.  We consider $Z_{im}$
+to be random as the genotypes are imputed under a probabilistic model. This
+makes the expected value $\mathbb{E}[Z_{im} |\mathcal{O}]$ of alternative
+allele counts given the experimentally observed reads the an appropriate
+genetic signal to consider.  Let's call the matrix of expected alternative
+allele counts $\mathbf{C} := \mathbb{E}[\mathbf{Z} |\mathcal{O}]$.  Given
+this, the GRM over expected alternative
 allele counts $\mathbf{A}_\text{EAC}$ is
 
 $$
@@ -120,7 +121,45 @@ $$
 
 ### Expected haplotype count GRM
 
-[] TODO
+The expected haplotype count GRM, $\mathbf{A}_\text{EHC}$, needs
+motivation.  The reason is that at each locus there is not a single 
+allele that we are counting, but instead we are counting the
+number of copies of each haplotype $k\in\{1, 2, \dots, K\}$ at any
+specified locus.  Indeed, when $K=2$ we can cast the problem to
+SNP case by identifying one of the two haplotypes as an alternative
+allele. However when $K>2$ the genetic data is no longer a scalar
+but a $K$ dimensional vector $h\in \{0,1,2\}^{K\times 1}$ such that
+$\sum_{k=1}^K h_k=2$.  Moreover, this implies that at each locus $j$
+there are $K$ effect sizes, that can be expressed as the column
+vector $\boldsymbol{\beta}_j\in \mathbb{R}^{K\times 1}$.  As we can
+see the haplotype model is more complex as the fixed effects are
+in a $K$ dimensional space as opposed to a 1 dimensional space.
+
+An important question when working under the haplotype model is what
+type of random genetic effects do we want to account for.  If we
+only care about the polygenic SNP effects, then we should make use of
+GRMs $\mathbf{A}$ or $\mathbf{A}_\text{EHC}$.  Another choice would
+be to account for poly-haplotype effects, that the LMM mapping genotype
+to phenotype at locus $j$ for sample $i$ becomes,
+
+$$
+Y_j = h_{ij}^T\,\boldsymbol{\beta}_j + \mathbf{W}_1U_1
++ \mathbf{W}_2 U_2
++ \dots
++ \mathbf{W}_K U_K
++ \epsilon_j.
+$$
+
+Here, the difference between the polygenic SNP and haplotype effects
+are explicit.  Instead of a single design matrix $\mathbf{Z}$ accounting
+for polygenic effects there are now $K$ matrices.  Consequently, the
+haplotype GRM is
+
+$$
+\mathbf{A}_\text{EHC} = \sum_{k=1}^K \mathbf{W}_k\mathbf{W}^T_k
+$$
+
+the sum of the similarity matrices of each haplotype.
 
 ### Leave one chromosome out (loco) GRM
 
