@@ -6,12 +6,14 @@
 ## Table of Contents
 
 1. [About](#about)
-1. [Subprograms: Compute GRM and leave-one-chromosome-out](#subprog)
-2. [Command line user interface](#cli)
-3. [Installation and requirements](#install)
-4. [References](#refs)
+2. [Genetic relationship matrices](#grm)
+3. [Command line interface](#cli)
+4. [Installation and requirements](#install)
+4. [Contributing](#contributing)
+4. [A.I. Acknowledgement](#ai)
+5. [References](#refs)
 
-# About <a name="about"></a>
+## About <a name="about"></a>
 
 The genetic relationship matrix (GRM) describes the genetic relationship 
 between pairs of samples.  Its computation is dependent on the random effects
@@ -52,19 +54,30 @@ $$
 where the genetic component of the phenotype covariance tells us how
 to compute the GRM, i.e. $\mathbf{Z}\mathbf{Z}^T$.  
 
-In general, the alt allele count polygenic random effects are not the only 
-genetic effects that we may account for.  This program includes GRMs 
-computed from genotypes, the expected alt allele count under the imputation
-model, the expected haplotype count, and a combination of the expected alt 
-allele count with the expected haplotype count.
+The alt allele count polygenic random effects are one example of genetic
+effects.  We do not need to limit ourselves to this model, and instead
+account for any measurable genetic signals.  This program uses several 
+signals to compute a GRM:
+
+* genotypes i.e. the alternative allele count,
+* the expected alt allele count under a probabilistic model, useful for
+imputed genetic signals,
+* ancestral haplotypes, i.e. a K dimensional vector of expected haplotype 
+counts,
+* or some combination of the aforementioned signals.
+
+This program provides an means to compute the GRM of genetic signals in
+general.
 
 
-## Genetic relationship matrices
+## Genetic relationship matrices <a name="grm"></a>
 
-The genetic relationship matrices modeling distinct genetic random effects
-are derived as outlined above.  Here we enumerate the GRM for each type
-of random effect consider.
-
+The genetic relationship matrices that this program computes are as follows:
+imputed SNP genotypes considered above, the expected alternative allele 
+counts under a probabilistic model, the expected ancestral haplotype counts,
+and the combined expected alternative allele and expected haplotype counts.
+The subsections the follow define the model and the calculation for the
+aforementioned GRMs.
 
 ### SNP GRM
 
@@ -72,30 +85,43 @@ The SNP GRM is presented in the [about](#about) section.  Let $A_\text{SNP}$ be 
 GRM computed by polygenic SNP effects, then 
 
 $$
-G = ZZ^T
+A_\text{SNP} = \mathbf{Z}\mathbf{Z}^T
 $$
 
-with $Z$ being the $N\times M$ matrix of alt allele counts.
+with $\mathbf{Z}$ being the $N\times M$ matrix of alt allele counts.
 
 
-### Expected alt allele count GRM
+### Expected alternative allele count GRM
 
-In many cases, as is the case in the Palmer Lab, SNP are imputed.  If the
-imputation method estimates the genotype probabilities of each locus of each
-sample as out method of choice, STITCH [[2]](#refs), then we are able to
-compute the expected alt allele count
+In many cases, as is the case in the Palmer Lab, SNPs are ***imputed***.  If
+the imputation method estimates the genotype probabilities at each locus of
+each sample, as does our method of choice STITCH [[2]](#refs), then it may 
+be more appropriate consider the expected alternative allele counts (EAC)
+under the imputation model rather than the imputed genotype calls.
+
+Let $Z_{ik}\in\{0, 1, 2\}$ be an element of the design matrix of random
+polygenic effects for sample $i$ at locus $k\neq j$.  We consider $Z_{ik}$
+to be random as the genotypes are imputed under a probistic model.  This
+makes the expected value $ \mathbb{E}[Z_{ik} |\mathcal{O} ]$ given the 
+experimentally observed reads the most appropriate genetic signal to
+consider.  Let's call the matrix of conditionally expected alternative
+allele counts $\mathbf{C}$, meaning that the GRM over expected alternative
+allele counts $\mathbf{A}_\text{EAC}$ is
 
 $$
-\begin{align}
-\mathbb{E}[X_{ji} | p_{ji}] = \sum_{x_{ji} = 0}^3 x_{ji}\;\mathbb{P}(X_{ji})
-\end{align}
+\mathbf{A}_\text{EAC} =\mathbf{C}\mathbf{C}^T.
 $$
-
-where $p
 
 ### Expected haplotype count GRM
 
-## Subprograms: Compute GRM and leave-one-chromosome-out <a name="#subprog"></a>
+[] TODO
+
+### Leave one chromosome out (loco) GRM
+
+[] TODO
+
+
+## Command line interface <a name="cli"></a>
 
 The `grm` program consists of two subprograms: 
 
@@ -105,23 +131,6 @@ The `grm` program consists of two subprograms:
 
 each of which have there own options enumerated in the next section.4=
 
-
-
-## Installation and requirements <a name="install"></a>
-
-The program is only available as source from this repository and requires
-
-* `GNU make` 
-* `htslib` https://github.com/samtools/htslib
-* `argparse` https://github.com/robert-vogel/argparse
-* `clang` or `gcc` C++17 compiler
-
-
-## Genetic Relationship Matrix types
-
-
-
-## Compute the genetic relationship matrix
 
 The GRM calculation requires the SNPs or haplotypes to jbe in the bcf family
 of file formats, i.e. vcf, vcf.gz, or bcf.  By default, the GRM is computed
@@ -136,38 +145,38 @@ Other options include
 
 
 
+## Installation and requirements <a name="install"></a>
 
-## Compute LOCO matrices
+The program is only available as source from this repository and requires
 
-```
-grm loco path/to/file/with/grm_filename_and_path_per_line
-```
-
-
-
+* `GNU make` 
+* `htslib` https://github.com/samtools/htslib
+* `argparse` https://github.com/robert-vogel/argparse
+* `clang` or `gcc` C++17 compiler
 
 
-## Contributing
+## Contributing <a name="contributing"></a>
 
 I am using [GoogleTest](https://google.github.io/googletest/) framework
 for organizing tests.  If you contribute, please make tests for your
 contributions.  To run tests, `build` directory and build the project
-```
 make check
 
 
-## Acknowledgement
 
-Code design and original version completed by Robert Vogel,
-reviewed by Claude Sonnet, the AI assistant from Anthropic
-(Jan 2025), with minor recommendations incorporated.
+## A.I. Acknowledgement <a name="ai"></a>
+
+The problem statement and overall design of the code base was by 
+Robert Vogel. He has made use of Claude for review and Claude Code,
+the AI assistant by Anthropic, to implement sum features.
+
 
 ## References <a name="refs"></a>
 
 [1] [Yang et al. Nature Genetics 42, 565-569 (2010)](https://www.nature.com/articles/ng.608)
-
-[1] [Kang et al. Genetics 178: 1709-1723 (2008)](https://academic.oup.com/genetics/article/178/3/1709/6061473)
+[2] [Davies et al. Nature Genetics 48, 965-969 (2016)](https://www.nature.com/articles/ng.3594)
+<!--
+[3] [Kang et al. Genetics 178: 1709-1723 (2008)](https://academic.oup.com/genetics/article/178/3/1709/6061473)
 
 [2] [Kang et al. Nature Genetics 42 348-354 (2010)](https://www.nature.com/articles/ng.548)
-
-
+-->
