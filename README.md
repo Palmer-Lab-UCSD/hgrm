@@ -229,16 +229,36 @@ The program is only available as source from this repository and requires
 ## The `.grm` file format <a name="grmspec"></a>
 
 The `.grm` file format is a binary data format consisting of meta data
-and a payload.  The meta data includes:
+and a payload.
 
-* program version number
+### Defined types
+
+The `Array<T>` type is a minimal dynamic data storage structure where
+the length of the array is known and its address on the heap saved in
+a pointer.
+```
+template<typename T>
+struct Array {
+    uint32_t len;
+    T data[len];
+};
+```
+
+The version structure stores is bit packed with fields specifying
+the `grm` program version number.
+
 ```
 struct version {
     uint32_t major: 10;
     uint32_t minor: 10;
     uint32_t micro: 10;
+    uint32_t : 2;
+};
 ```
-* date that the program launched
+
+The data structure stores is bit packed with fields specifying when
+the `grm` program was launched.
+
 ```
 struct date {
     uint32_t year : 12;
@@ -246,35 +266,21 @@ struct date {
     uint32_t day : 5;
     uint32_t hour : 5;
     uint32_t sec : 6;
-}
-```
-* user name of person that launched the program
-```
-Array<char>
-```
-* chromosome, or more generally, the contigs name
-```
-Array<char>
-```
-* the set of marker positions used for computing the GRM
-```
-Array<uint32_t>
-```
-* the sample id's in order of the column number of the GRM
-```
-Array<Array<char>>
+};
 ```
 
-where the `Array<T>` template is defined by:
-```
-templat<typename T>
-struct Array {
-    uint32_t len;
-    char *data;
-}
-```
-that is to say that the array is a simple dynamic data structure
-whose data is allocated on the heap.
+### Meta data
+
+| offset | field    | type      | size (bytes)  | description |
+| ---   | ---       | ---       | ---           | ---         |
+| 0     | magic     | uint32_t  | 4     | File signature |
+| 4     | version   | struct version | 4     | major/minor/micro |
+| 8     | date      | struct date    | 4     | year/month/day/hour/sec |
+| 16    | user      | Array<char>   | ||
+
+
+
+### Payload
 
 The payload is the upper triangular and diagonal components in an
 $M \, (M+1) / 2$ element array of 32 bit floating point numbers
