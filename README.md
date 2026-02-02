@@ -9,6 +9,7 @@
 2. [Genetic relationship matrices](#grm)
 3. [Command line interface](#cli)
 4. [Installation and requirements](#install)
+5. [`.grm` file format](#grmspec)
 4. [Contributing](#contributing)
 4. [A.I. Acknowledgement](#ai)
 5. [References](#refs)
@@ -162,7 +163,22 @@ the sum of the similarity matrices of each haplotype.
 
 ### Leave one chromosome out (loco) GRM
 
-[] TODO
+In a genome wide association study (GWAS) polygenic effects are often
+accounted for from all loci except those of the chromosome that fixed
+effect sizes are being estimated.  This approach is referred to as
+"leave-one-chromosome-out", or loco for short, for which we will refer
+the resulting GRM as the loco GRM.  This matrix can be computed easily
+from the set of all chromosome GRMs.
+
+Let $M_c$ be the number of markers used for computing the GRM $A_c$.
+Then it follows that the loco GRM $L_u$ that is used for effect size
+estimation of all loci on chromosome $u$ is,
+
+$$
+\begin{align}
+L_u &= \sum_{\forall c \neq u} A_c.
+\end{align}
+$$
 
 
 ## Command line interface <a name="cli"></a>
@@ -173,19 +189,30 @@ The `grm` program consists of two subprograms:
 * `grm loco`: the aggregation of contig GRMs into a 
     "leave-one-chromosome-out" matrix (denoted the "loco" matrix).  
 
-each of which have there own options enumerated in the next section.4=
+to read documentation on the respective subprogram simply
 
+```
+grm [contig | loco] --help
+```
 
-The GRM calculation requires the SNPs or haplotypes to jbe in the bcf family
-of file formats, i.e. vcf, vcf.gz, or bcf.  By default, the GRM is computed
+The GRM calculation requires tha the genetic information is in the
+the bcf family of file formats, i.e. vcf, vcf.gz, or bcf.  While
+the loco subprogram requires all chromosome matrices to be in the
+`.grm` binary file format defined below.
+
+### Computing a contig GRM
+
+By default, the GRM is computed
 using the expected haplotype counts with FORMAT ID = "HD".
 
 ```
 grm chrm <chrm_id> <path/to/my/snps.bcf>
 ```
-
 will produce a binary `.mat` file that stores the GRM and relavent meta data.
 Other options include
+
+### Computing a loco GRM
+
 
 
 
@@ -197,6 +224,63 @@ The program is only available as source from this repository and requires
 * `htslib` https://github.com/samtools/htslib
 * `argparse` https://github.com/robert-vogel/argparse
 * `clang` or `gcc` C++17 compiler
+
+
+## The `.grm` file format <a name="grmspec"></a>
+
+The `.grm` file format is a binary data format consisting of meta data
+and a payload.  The meta data includes:
+
+* program version number
+```
+struct version {
+    uint32_t major: 10;
+    uint32_t minor: 10;
+    uint32_t micro: 10;
+```
+* date that the program launched
+```
+struct date {
+    uint32_t year : 12;
+    uint32_t month : 4;
+    uint32_t day : 5;
+    uint32_t hour : 5;
+    uint32_t sec : 6;
+}
+```
+* user name of person that launched the program
+```
+Array<char>
+```
+* chromosome, or more generally, the contigs name
+```
+Array<char>
+```
+* the set of marker positions used for computing the GRM
+```
+Array<uint32_t>
+```
+* the sample id's in order of the column number of the GRM
+```
+Array<Array<char>>
+```
+
+where the `Array<T>` template is defined by:
+```
+templat<typename T>
+struct Array {
+    uint32_t len;
+    char *data;
+``
+that is to say that the array is a simple dynamic data structure
+whose data is allocated on the heap.
+
+The payload is the upper triangular and diagonal components in an
+$M \, (M+1) / 2$ element array of 32 bit floating point numbers
+While the genotype based GRM will not produce fractional values,
+the expected counts will, making `float32` an acceptable choice.
+order.
+
 
 
 ## Contributing <a name="contributing"></a>
