@@ -271,7 +271,7 @@ templat<typename T>
 struct Array {
     uint32_t len;
     char *data;
-``
+```
 that is to say that the array is a simple dynamic data structure
 whose data is allocated on the heap.
 
