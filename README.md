@@ -244,7 +244,7 @@ struct Array {
 };
 ```
 
-The version structure stores is bit packed with fields specifying
+The version structure is bit packed with fields specifying
 the `grm` program version number.
 
 ```
@@ -256,7 +256,7 @@ struct version {
 };
 ```
 
-The data structure stores is bit packed with fields specifying when
+The date structure is bit packed with fields specifying when
 the `grm` program was launched.
 
 ```
@@ -272,21 +272,24 @@ struct date {
 ### Meta data
 
 | offset | field    | type      | size (bytes)  | description |
-| ---   | ---       | ---       | ---           | ---         |
-| 0     | magic     | uint32_t  | 4     | File signature |
-| 4     | version   | struct version | 4     | major/minor/micro |
-| 8     | date      | struct date    | 4     | year/month/day/hour/sec |
-| 16    | user      | Array<char>   | ||
+| ---    | ---      | ---       | ---           | ---         |
+| 0      | magic    | uint32_t  | 4             | File signature (0x47524D00 = "GRM\0") |
+| 4      | version  | struct version | 4        | Program version: major/minor/micro |
+| 8      | date     | struct date    | 4        | Launch time: year/month/day/hour/sec |
+| 12     | user     | Array\<char\>  | 4 + len  | Username of person who ran the program |
+| varies | contig   | Array\<char\>  | 4 + len  | Chromosome or contig name |
+| varies | markers  | Array\<uint32_t\> | 4 + 4×len | Marker positions used for GRM computation |
+| varies | samples  | Array\<Array\<char\>\> | 4 + Σ(4 + len_i) | Sample IDs in column order of the GRM |
 
 
 
 ### Payload
 
-The payload is the upper triangular and diagonal components in an
-$M \, (M+1) / 2$ element array of 32 bit floating point numbers
-While the genotype based GRM will not produce fractional values,
-the expected counts will, making `float32` an acceptable choice.
-order.
+The payload is the upper triangular and diagonal components of the
+$N \times N$ GRM stored as an array of $N(N+1)/2$ 32-bit floating point
+numbers in row-major order. While the genotype-based GRM will not produce
+fractional values, the expected count GRMs will, making `float32` an
+acceptable choice for all GRM types.
 
 
 
