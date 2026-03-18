@@ -70,7 +70,7 @@
 // making the equation above read
 //  
 //  i * (n_samples + 1) - i * (i+1)/2 + j
-#define MATRIX_IDX_TO_ARRAY(i, j, n)   ((i) * (n + 1) - (i)*(i+1)/2 + j)
+#define MATRIX_IDX_TO_ARRAY(i, j, n)   ((i)*((n) + 1) - (i)*((i)+1)/2 + (j))
 
 
 namespace grm {
@@ -95,6 +95,7 @@ enum GrmType {
     EAC,        // Expected Alternative Allele Count
     BOTH,       // Both EHC AND EAC
     DS,         // Dosage, i.e. Called Alternative Allele Count
+    UNSPECIFIED,
 }; 
 
 // @title: Store genomic coordinates used in GRM calculation
@@ -103,7 +104,7 @@ struct Coordinates {
     Coordinates(const char* contig, const size_t len)
         : contig(contig),
         len(len), 
-        pos(std::make_unique<size_t>(len)) {};
+        pos(std::make_unique<size_t[]>(len)) {};
 
     Coordinates(Coordinates&) = delete;
     Coordinates& operator=(Coordinates&) = delete;
@@ -134,7 +135,7 @@ STATUS read(io::FileIO* fio, Coordinates* coords);
 // Samples stores sample id strings and the number of samples
 //
 struct Samples {
-    Samples(): len(0), names(nullptr);
+    Samples(): len(0), names(nullptr) {};
     Samples(size_t n_samples): 
         len(n_samples), 
         names(len == 0 ? nullptr : std::make_unique<std::string[]>(len)) {};
@@ -173,12 +174,24 @@ STATUS read(io::FileIO* fio, Samples* samples);
 // Header
 struct Hdr {
 
-    // Data Fields
-    GrmType grm_type;
-    Coordinates* coords;
-    Samples* samples;
+    Hdr()
+        : version(""),
+        grm_type(UNSPECIFIED),
+        coords(std::make_unique<Coordinates>),
+        samples(std::make_unique<Samples>) {};
 
-    const std::string version = constants::version;
+    Hdr(Hdr&) = delete;
+    Hdr& operator=(Hdr&) = delete;
+
+    Hdr(Hdr&&);
+    Hdr& operator=(Hdr&&);
+
+    // Data Fields
+    std::string version;
+    GrmType grm_type;
+    std::unique_ptr<Coordinates> coords;
+    std::unique_ptr<Samples> samples;
+
 };
 
 // Header Storage Layout
@@ -241,8 +254,8 @@ private:
 // @param hdr: an instance of grm::Hdr with important meta data
 // @return grm::STATUS: 
 //
-STATUS write(io.FileIO *fio, const Hdr *hdr, const Grm *grmatrix) const;
-STATUS read(io.FileIO *fio, const Hdr *hdr, Grm *grmatrix);
+STATUS write(io::FileIO *fio, const Hdr *hdr, const Grm *grmatrix) const;
+STATUS read(io::FileIO *fio, const Hdr *hdr, Grm *grmatrix);
 
 
 }

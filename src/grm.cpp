@@ -81,6 +81,8 @@ grm::Coordinates& grm::Coordinates::operator=(Coordinates&& other) {
     other.pos=nullptr;
     other.len = 0;
     other.contig = "";
+
+    return *this;
 }
 
 // remember that Coordinates* should be uninstantiated
@@ -153,11 +155,11 @@ grm::STATUS read(io::FileIO* fio, Coordinates* coords) {
     std::unique_ptr<char[]> buffer = std::make_unique<char[]>(size_contig_name + 1);
     std::memset(buffer.get(), '\0', size_contig_name + 1);
 
-    nread = fread(buffer, sizeof(char), size_contig_name, fio->fid);
+    nread = fread(buffer.get(), sizeof(char), size_contig_name, fio->fid);
     if (nread != size_contig_name)
         return grm::ERROR_ON_READ;
 
-    tmpc.contig = std::string(buffer);
+    tmpc.contig = std::string(buffer, size_contig_name);
 
     // read in positions
     size_t npos = 0;
@@ -189,7 +191,7 @@ grm::Samples::Samples(grm::Samples&& other)
 }
 
 
-grp::Samples& grm::Samples::operator=(grm::Samples&& other) {
+grm::Samples& grm::Samples::operator=(grm::Samples&& other) {
     if (this == &other)
         return *this;
     
@@ -228,7 +230,7 @@ grm::STATUS write(io::FileIO* fio, const grm::Samples* samples) {
     size_t nchar_max = 0;
     size_t tmp = 0;
     for (size_t n = 0; n < nsamps; n++)
-        if ((tmp = samples->name[n].size()) > nchar_max) nchar_max = tmp;
+        if ((tmp = samples->names[n].size()) > nchar_max) nchar_max = tmp;
 
     if (nchar_max == 0)
         return grm::ERROR_INVALID_ARG;
@@ -266,7 +268,7 @@ grm::STATUS read(io::FileIO* fio, grm::Samples* samples) {
 
     // I create a temporary Sample class, because I don't want the 
     // input samples instance to partial update upon an error
-    grm::Samples tmp_samps();
+    grm::Samples tmp_samps {};
 
     size_t nread;
     size_t n_samples = 0;
@@ -275,7 +277,8 @@ grm::STATUS read(io::FileIO* fio, grm::Samples* samples) {
     if (nread != 1)
         return grm::ERROR_ON_READ;
     
-    tmp_samps->len = n_samples;
+    tmp_samps.len = n_samples;
+    tmp_samps.names = srd::make_unique<std::string[]>(n_samples); 
 
     // Get the number of characters of the longest string
     size_t nchar_max = 0;
@@ -284,11 +287,11 @@ grm::STATUS read(io::FileIO* fio, grm::Samples* samples) {
         return grm::ERROR_ON_READ;
 
 
-    std::unique_ptr<char[]> buffer = std::make_unique<char[]>(nchar_max + 1);
+    std::unique_ptr<char[]> buffer = std::make_unique<char[]>(nchar_max+1);
     std::memset(buffer.get(), '\0', nchar_max + 1);
 
     size_t nchar = 0;
-    for (size_t n = 0; n < n_samples: n++) {
+    for (size_t n = 0; n < n_samples; n++) {
         nread = fread(&nchar, sizeof(size_t), 1, fio->fid);
         if (nread != 1)
             return grm::ERROR_ON_READ;
@@ -297,10 +300,10 @@ grm::STATUS read(io::FileIO* fio, grm::Samples* samples) {
         if (nread != nchar)
             return grm::ERROR_ON_READ;
 
-        tmp_samps->names[n] = std::string(buffer);
+        tmp_samps.names[n] = std::string(buffer, nchar);
 
-        nchar = 0;
         std::memset(buffer.get(), '\0', nchar);
+        nchar = 0;
     }
 
     *samples = std::move(tmp_samps);
@@ -311,6 +314,40 @@ grm::STATUS read(io::FileIO* fio, grm::Samples* samples) {
 ////////////////////////////////////////////////////////////////////
 // HDR CLASS
 ////////////////////////////////////////////////////////////////////
+
+grm::Hdr::Hdr(Hdr&& other)
+    : version(other.version),
+    grm_type(other.grm_type),
+    coords(nullptr),
+    samples(nullptr) {
+
+    other.version = "";
+    other.grm_type = grm::UNSPECIFIED;
+
+    *coords = std::move(*other.coords);
+    other.coords = nullptr;
+
+    samples = std::move(*other.samples);
+    other.samples = nullptr;
+}
+
+grm::Hdr& grm::Hdr::operator=(Hdr&& other) {
+    if (this == &other)
+        return *this;
+
+    version = other.version;
+    other.version = "";
+
+    grm_type = other.grm_type;
+    other.grm_type = grm::UNSPECIFIED;
+
+    *coords = std::move(*other.coords);
+    other.coords = nullptr;
+
+    *samples = std::move(*other.samples);
+    other.samples = nullptr;
+    return *this;
+}
 
 
 grm::STATUS write(io::FileIO* fio, const Hdr* hdr) {
@@ -323,10 +360,22 @@ grm::STATUS write(io::FileIO* fio, const Hdr* hdr) {
     if (!hdr)
         return grm::ERROR_NULLPTR_ARG;
 
-    fwrite(&hdr->version.size(), sizeof(size_t), 1, fio->fid);
-    fwrite(hdr->version.c_str(), sizeof(char), hdr->version.size(), fio->fid);
+    size_t nwritten = 0;
 
-    fwrite(&hdr->grm_type, sizeof(GrmType), 1, fio->fid);
+    size_t nchar = hdr->version.size();
+    nwritten = fwrite(&nchar, sizeof(size_t), 1, fio->fid);
+    if (nwritten != 1)
+        return grm::ERROR_ON_WRITE;
+
+    nwritten = fwrite(hdr->version.c_str(), 
+            sizeof(char), nchar, fio->fid);
+    if (nwritten != nchar)
+        return grm::ERROR_ON_WRITE;
+
+    nwritten = fwrite(&hdr->grm_type, sizeof(GrmType), 1, fio->fid);
+    if (nwritten != 1)
+        return grm::ERROR_ON_WRITE;
+
     grm::STATUS status;
     if ((status = write(fio, hdr->coords)) != grm::SUCCESS)
         return status;
@@ -347,7 +396,42 @@ grm::STATUS read(io::FileIO* fio, Hdr* hdr) {
     if (!hdr)
         return grm::ERROR_NULLPTR_ARG;
 
+    Hdr tmp_hdr {};
+
+    size_t nread = 0;
+    size_t nchar_version = 0;
+
+    nread = fread(&nchar_version, sizeof(size_t), 1, fio->fid);
+    if (nread != 1)
+        return grm::ERROR_ON_READ;
+
+    std::unique_ptr<char[]> buffer = std::make_unique<char[]>(nchar_version + 1);
+    std::memset(buffer.get(), '\0', nchar_version + 1);
+
+    nread = fread(buffer.get(), sizeof(char), nchar_version, fio->fid);
+    if (nread != nchar_version)
+        return grm::ERROR_ON_READ;
+
+    tmp_hdr.version = std::string(buffer, nchar_version);
+
+    nread = fread(&tmp_hdr.grm_type, sizeof(grm::GrmType), 1, fio->fid);
+    if (nread != 1)
+        return grm::ERROR_ON_READ;
+
+    grm::STATUS status;
+    status = read(fio, tmp_hdr.coords.get());
+    if (status != grm::SUCCESS)
+        return status;
+
+    status = read(fio, tmp_hdr.samples.get());
+    if (status != grm::SUCCESS)
+        return status;
+
+    *hdr = std::move(tmp_hdr);
+    return grm::SUCCESS;
 }
+
+
 ////////////////////////////////////////////////////////////////////
 // GRM CLASS
 ////////////////////////////////////////////////////////////////////
@@ -417,7 +501,7 @@ grm::STATUS grm::Grm::set(const size_t i, const size_t j, const float val) {
 }
 
 
-grm::STATUS grm::Grm::write(io.FileIO *fio, const Hdr *hdr) const {
+grm::STATUS grm::Grm::write(io::FileIO *fio, const Hdr *hdr) const {
 
     std::unique_ptr<FILE> fid = make_unique<FILE>(fopen(filename, "wb"));
 
@@ -437,6 +521,6 @@ grm::STATUS grm::Grm::write(io.FileIO *fio, const Hdr *hdr) const {
 }
 
 
-grm::Grm grm::Grm::read(io.FileIO *fio) {
+grm::Grm grm::Grm::read(io::FileIO *fio) {
     return grm::STATUS;
 }
