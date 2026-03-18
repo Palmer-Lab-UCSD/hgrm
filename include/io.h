@@ -22,11 +22,48 @@ enum STATUS {
 
 
 struct FileIO {
-    FileIO(FILE *fid): fid(fid) {}; 
+    FileIO(FILE* fid): fid(fid) {}; 
     ~FileIO() { if (fid) { fclose(fid); fid = nullptr; } };
+
+    FileIO(const FileIO&) = delete;
+    FileIO& operator=(const FileIO&) = delete;
+    
+    FileIO(FileIO&& other) noexcept : fid(other.fid) {
+        other.fid = nullptr;
+    }
+
+    FileIO& operator=(FileIO&& other) {
+        // protect against self assignment
+        if (this == &other) return *this;
+
+        if (fid) fclose(fid);
+
+        fid = other.fid;
+        other.fid = nullptr;
+
+        return *this;
+    }
 
     FILE *fid;
 };
+
+
+// @title: open a file 
+// @description:
+// @param filename: name and path of file to open
+// @param mode: a mode in the set of those in the C library function fopen
+// @return a pointer to opened file
+FileIO open(const char *filename, const char *mode) {
+    if (!mode  || !filename)
+        return nullptr;
+
+    FILE *fid = fopen(filename, mode);
+    if (!fid)
+        return nullptr;
+
+    FileIO fio = FileIO(fid);
+    return std::move(fio);
+}
 
 
 // @title: file object
@@ -34,25 +71,8 @@ struct FileIO {
 //      by RAII.  To contruct an instance of the class use the "open" function
 //      below.
 // @param fid: an opened C-style file stream
-int bseek(FileIO *fio);
+// int bseek(FileIO *fio);
 
-// @title: open a file and instantiate a TextIO object
-// @description:
-// @param filename: name and path of file to open
-// @param mode: a mode in the set of those in the C library function fopen
-// @return a unique_ptr<TextIO> if the file stream was successfully opened
-//      and TextIO instance created.  Otherwise, return a nullptr.
-FileIO *open(const char *filename, const char *mode) {
-    if (!mode or !filename)
-        return nullptr;
-
-    fid = fopen(filename, mode);
-    if (ferror(fid))
-        return nullptr;
-
-    if (*mode == 'b')
-        return 
-}
 
 
 // @title: File statistics

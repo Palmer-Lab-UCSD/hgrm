@@ -99,7 +99,9 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    // EXTRACT ARGS
+    // PARSE ARGS FOR RESPECTIVE SUBPROGRAMS AND RUN
+    //
+    // Compute the GRM for the specified contig
     if (parser.is_sub_cmd("contig")) {
 
         std::optional<std::string> tmp_str {};
@@ -146,9 +148,8 @@ int main(int argc, char* argv[])
         bool use_both { tmp_bool.value() };
 
 
-
         if ((use_gt && use_both) || (use_gt && use_ehc) || (use_both && use_ehc)) {
-            log.error("user must specify either use_gt, use_both, use_ds,"
+            log.error("user must specify either use_gt, use_both, use_ehc,"
                     " or omit both options to compute the haplotype based"
                     " relationship matrix.");
             exit(EXIT_FAILURE);
@@ -167,25 +168,25 @@ int main(int argc, char* argv[])
         else if (bstatus < 0) {
             log.error("Subsetting by sample file, %s, resulted in error", 
                     samp_fname.c_str());
-            return -1;
+            exit(EXIT_FAILURE);
         } else if (bstatus > 0) {
             log.error("One or more samples specified in sample file, %s,"
                     " do not %s", 
                     samp_fname.c_str(), 
                     bcf_fname.c_str());
-            return -1;
+            exit(EXIT_FAILURE);
         }
 
         log.info("Output matrix file: %s", out_fname.c_str());
 
-        grm.Grm cov { bfid.n_samples(), bfid.n_samples() };
+        grm::Grm grmatrix { bfid.n_samples() };
 
         if (use_gt) {
             log.info("Relationship matrix: genotype");
             status = compute_genotype_matrix();
         } else if (use_ehc) {
             log.info("Relationship matrix: expected haplotype count");
-            status = compute_ehc_matrix(&log, &bfid, &cov);
+            status = compute_ehc_matrix(&log, &bfid, &grmatrix);
         } else if (use_both) {
             log.info("Relationship matrix: expected alt allele and haplotype"
                     " counts");
@@ -200,11 +201,17 @@ int main(int argc, char* argv[])
 
         log.info("Writing to file");
 
-        cov.write(out_fname);
+        grmatrix.write(out_fname);
+    } else if (parser.is_sub_cmd("loco")) {
+        // Compute the leave-one-chromosome-out matrix given a set of 
+        // matricies.
+        //
+        printf("loco selected\n");
+    } else if (parser.is_sub_cmd("assoc")) {
+        printf("association statistics selected\n");
     }
 
-    if (parser.is_sub_cmd("loco"))
-        printf("loco selected\n");
+
 
 
     return status;

@@ -55,50 +55,103 @@
 // }
 // 
 
+////////////////////////////////////////////////////////////////////
+// Coordinates class
+////////////////////////////////////////////////////////////////////
+
 grm::Coordinates::Coordinates(const char *contig, const size_t len):
-    contig(contig), len(len), pos(std::make_unique<size_t>(len)) {}
+    contig(contig), len(len), pos(std::make_unique<size_t>(len)) {};
 
 
+grm::STATUS write(io::FileIO *fio, const Coordinates *coords) {
 
-// default constructor
-grm::Grm::Grm(const size_t nrow, const size_t mcol)
-    : dims_(nrow, mcol), 
+    if (!fio->fid)
+        return grm::ERROR_FILE_NOT_OPEN;
+
+    // write contig name to file
+    size_t nwritten = 0;
+    size_t nchar = coords->contig.size();
+    nwritten = fwrite(&nchar, sizeof(nchar), 1, fio->fid);
+    if (nwritten != 1)
+        return grm::ERROR_ON_WRITE;
+
+    nwritten = fwrite(coords->contig.c_str(), 
+            sizeof(coords->name[0]), 
+            nchar,
+            fio->fid);
+    if (nwritten != nchar)
+        return grm::ERROR_ON_WRITE;
+
+    // write positions
+    size_t npos = coords->len;
+    nwritten = fwrite(&npos, sizeof(npos), 1, fio->fid);
+    if (nwritten != 1)
+        return grm::ERROR_ON_WRITE;
+
+    nwritten = fwrite(coords->pos.get(), 
+            sizeof(coords->pos[0]),
+            npos,
+            fio->fid);
+    if (nwritten != pos)
+        return grm::ERROR_ON_WRITE;
+
+    return grm::SUCCESS;
+}
+
+
+grm::STATUS read(io::FileIO* fio, Coordinates* coords) {
+}
+
+
+////////////////////////////////////////////////////////////////////
+// GRM class
+////////////////////////////////////////////////////////////////////
+//
+// Recall that the GRM is a symmetric matrix, therefore we only need
+// to store the upper triagonal and diagonal element values.  
+// Consequently, the size of the array storing the data is n*(n +1)/2.
+//
+grm::Grm::Grm(const size_t n_samples)
+    : n_samples_(n_samples)
         data_(size() != 0 ? std::make_unique<float[]>(size()) : nullptr) {
 
     if (data_)
        std::memset(data_.get(), 0, size());
 }
 
+// The number of upper diagonal + diagonal elements of the GRM
+size_t grm::Grm::size() const { return n_samples * (n_samples + 1) / 2; };
 
-// copy constructor
-//
-grm::Grm::Grm(const grm::Grm& other) 
-    : nrow_(dims.other.nrow_), mcol_(dims.other.mcol_),
-        data_(std::make_unique<float[]>(other.size())) {
-    std::memset(data_.get(), 0, size());
+
+grm::STATUS grm::Grm::midx_to_arr_(const size_t i, const size_t j, size_t *idx) const {
+
+    if (i >= n_samples_ || j >= n_samples_)
+        return grm::ERROR_IDX_ARR_BOUNDS;
+
+    // remember that by symmetry, the matrix is equal to its transpose
+    if (i <= j)
+        *idx = MATRIX_IDX_TO_ARRAY(i, j, n_samples_);
+    else 
+        *idx = MATRIX_IDX_TO_ARRAY(j, i, n_samples_);
+
+    return grm::SUCCESS;
 }
 
 
-// TODO: check this.
-grm::Grm::Grm(grm::Grm&& other) 
-    : nrow_(dims_.other.nrow_), dims.mcol_(other.mcol_), 
-        data_(std::move(other.data_)) {};
-
-
 float grm::Grm::operator()(const size_t i, const size_t j) const {
-    return data_[i*mcol_ + j];
+    return data_[MATRIX_IDX_TO_ARRAY(i, j, n_samples_)];
 }
 
 
 float& grm::Grm::operator()(const size_t i, const size_t j) {
-    return data_[i*mcol_ + j];
+    return data_[MATRIX_IDX_TO_ARRAY(i, j, n_samples_)];
 }
 
 
 grm::STATUS grm::Grm::get(const size_t i, const size_t j, float *val) const {
     size_t idx = 0;
-    grm::STATUS status = grm::STATUS::FAILED;
-    if ((status = midx_to_arr_(i, j, &idx)) != grm::STATUS::SUCCESS) 
+    grm::STATUS status = grm::FAILED;
+    if ((status = midx_to_arr_(i, j, &idx)) != grm::SUCCESS) 
         return status;
 
     *val = data_[idx];
@@ -119,23 +172,7 @@ grm::STATUS grm::Grm::set(const size_t i, const size_t j, const float val) {
 }
 
 
-const grm::Dims& grm::Grm::dims() const { return dims_; };
-
-
-grm::STATUS grm::Grm::midx_to_arr_(const size_t i, const size_t j, size_t *idx) const {
-
-    if (i >= nrow_ || j >= mcol_)
-        return grm::STATUS::ERROR_IDX_ARR_BOUNDS;
-
-    *idx = i*mcol_ + j;
-    return grm::STATUS::SUCCESS;
-}
-
-
-size_t grm::Grm::size() const { return dims_.nrow_ * dims_.mcol_; };
-
-
-grm::STATUS grm::Grm::write(const char *filename) const {
+grm::STATUS grm::Grm::write(io.FileIO *fio, const Hdr *hdr) const {
 
     std::unique_ptr<FILE> fid = make_unique<FILE>(fopen(filename, "wb"));
 
@@ -155,6 +192,6 @@ grm::STATUS grm::Grm::write(const char *filename) const {
 }
 
 
-grm::STATUS grm::Grm::read(const char *filename, grm::Grm *grm) {
+grm::Grm grm::Grm::read(io.FileIO *fio) {
     return grm::STATUS;
 }
