@@ -25,8 +25,8 @@
 // ACKNOWLEDGMENT
 //
 // Code design and original version completed by Robert Vogel,
-// reviewed by Claude Sonnet, the AI assistant from Anthropic
-// (Jan 2025), with minor recommendations incorporated.
+// reviewed by Claude Opus 4.6, the AI assistant from Anthropic.
+// Some recommendations have been incorporated.
 // 
 #ifndef HEADER_GRM_H
 #define HEADER_GRM_H
@@ -40,7 +40,7 @@
 #include <utility>
 #include <string>
 
-#include "io.h"
+#include "constants.h"
 
 
 // The algorithm for getting the array idx from matrix indexes is simply
@@ -83,7 +83,10 @@ enum STATUS {
     ERROR_FOPEN,
     ERROR_EOF_NOT_REACHED,
     ERROR_ON_WRITE,
+    ERROR_ON_READ,
     ERROR_FILE_NOT_OPEN,
+    ERROR_NULLPTR_ARG,
+    ERROR_INVALID_ARG,
 };
 
 
@@ -95,42 +98,101 @@ enum GrmType {
 }; 
 
 // @title: Store genomic coordinates used in GRM calculation
-// @description: 
 struct Coordinates {
-    const std::string contig;
-    const size_t len;
-    std::unique_ptr<size_t> *pos;
+    Coordinates(): contig(""), len(0), pos(nullptr) {};
+    Coordinates(const char* contig, const size_t len)
+        : contig(contig),
+        len(len), 
+        pos(std::make_unique<size_t>(len)) {};
+
+    Coordinates(Coordinates&) = delete;
+    Coordinates& operator=(Coordinates&) = delete;
+
+    Coordinates(Coordinates&& other);
+    Coordinates& operator=(Coordinates&& other);
+
+    // Data Fields
+    std::string contig;
+    size_t len;
+    std::unique_ptr<size_t[]> pos;
 };
 
 
-STATUS write(io::FileIO* fio, Coordinates* coords);
+// Coordinates Storage Layout
+//
+//  type    number  description
+//  --------------------------------------------------------------------
+//  size_t  1       number of characters (n) in contig name
+//  char    n       characters for contig name without null character
+//  size_t  1       number of genomic positions (npos) 
+//  size_t  npos    the positions used for computation of the grm
+//
+STATUS write(io::FileIO* fio, const Coordinates* coords);
 STATUS read(io::FileIO* fio, Coordinates* coords);
 
 
-// Storage in binary format.  Sample names are comma separated
-// [size_t len][names[0],names[1],names[2]...names[len-1]\0]
+// Samples stores sample id strings and the number of samples
+//
 struct Samples {
-    Samples(const size_t len): 
-        len(len), 
-        names(len == 0 ? nullptr : std::make_unique<std::string>(len)){};
-    const size_t len;               //number of samples
-    std::unique_ptr<std::string> names;
+    Samples(): len(0), names(nullptr);
+    Samples(size_t n_samples): 
+        len(n_samples), 
+        names(len == 0 ? nullptr : std::make_unique<std::string[]>(len)) {};
+
+    Samples(const Samples&) = delete;
+    Samples& operator=(const Samples&) = delete;
+
+    Samples(Samples&& other);
+    Samples& operator=(Samples&& other);
+
+    // Data Fields
+    size_t len;               //number of samples
+    std::unique_ptr<std::string[]> names;
+
 };
 
-STATUS write(io::FileIO *fio, Samples *samples);
-STATUS read(io::FileIO *fio, Samples *samples);
+
+// Sample Storage Layout
+//
+//  type    number  description
+//  --------------------------------------------------------------------
+//  size_t  1       represents number of samples
+//  size_t  1       the number of characters of longest sample id
+//  size_t  1       number of characters (n_1) in first sample id
+//  char    n_1     characters of sample id 1 without terminal null '\0'
+//  size_t  1       number of characters (n_2) in second sample id
+//  char    n_2     characters of sample id 2 without terminal null '\0'
+//  ...
+//  size_t  1       number of characters (n_N) in N^{th} sample id
+//  char    n_N     characters of sample id N without terminal null '\0'
+
+STATUS write(io::FileIO* fio, const Samples* samples);
+STATUS read(io::FileIO* fio, Samples* samples);
 
 
 // Header
 struct Hdr {
-    // const std::string program_version;
-    const size_t n_samples;
-    const GrmType grm_type;
-    const Coordinates *coords;
-    const Samples *samples;
+
+    // Data Fields
+    GrmType grm_type;
+    Coordinates* coords;
+    Samples* samples;
+
+    const std::string version = constants::version;
 };
 
-
+// Header Storage Layout
+//
+//  type    number  description
+//  --------------------------------------------------------------------
+//  size_t  1       number of characters (n) in version string
+//  char    n       version string without null terminator
+//  GrmType 1       type of grm 
+//
+//  call write for coordinates
+//
+//  call write for samples
+//
 STATUS write(io::FileIO *fio, const Hdr *hdr);
 STATUS read(io::FileIO *fio, Hdr *hdr);
 

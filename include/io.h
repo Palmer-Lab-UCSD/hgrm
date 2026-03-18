@@ -97,34 +97,6 @@ struct FileStats {
 STATUS wc(TextIO *tio, FileStats *fs);
 
 
-template<typename T>
-struct Array {
-    Array(size_t size_in): size(size_in), 
-        data(size > 0 ? new T[size] : nullptr) {};
-
-    ~Array() { if (data) delete[] data; };
-
-    size_t size;
-    T *data;
-    size_t len = 0;
-
-    //unsafe referencing
-    T operator[](size_t i) { return data[i]; };
-    T& operator[](size_t i) { return data[i]; };
-
-    STATUS append(T val) {
-        if (len >= size-1)
-            return END_OF_BUF_ERROR;
-
-        data[len++] = val;
-        return SUCCESS;
-    }
-
-    void fill(T val) {
-        std::memset(data, val, size);
-        len = 0;
-    }
-}
 
 
 STATUS getline(TextIO *tio, Array<char> linebuf);
