@@ -231,61 +231,44 @@ The program is only available as source from this repository and requires
 The `.grm` file format is a binary data format consisting of meta data
 and a payload.
 
-### Defined types
 
-The `Array<T>` type is a minimal dynamic data storage structure where
-the length of the array is known and its address on the heap saved in
-a pointer.
-```
-template<typename T>
-struct Array {
-    uint32_t len;
-    T data[len];
-};
-```
-
-The version structure is bit packed with fields specifying
-the `grm` program version number.
-
-```
-struct version {
-    uint32_t major: 10;
-    uint32_t minor: 10;
-    uint32_t micro: 10;
-    uint32_t : 2;
-};
-```
-
-The date structure is bit packed with fields specifying when
-the `grm` program was launched.
-
-```
-struct date {
-    uint32_t year : 12;
-    uint32_t month : 4;
-    uint32_t day : 5;
-    uint32_t hour : 5;
-    uint32_t sec : 6;
-};
-```
+Assume 64-bit machine, little-endian, e.g. ARM and x86-64.
+    
 
 ### Meta data
+    
+| offset    | type      | size      | description                               |
+| (bytes)   |           | (bytes)   |                                           |
+| --------- | --------- | --------- | ----------------------------------------- |
+| 0         | uint32_t  | 4         | File signature (0x47524D00 = "GRM\0")     |
+| 4         | uint32_t  | 4         | File version, utils::Version              |
+| 8         | uint32_t  | 4         | Program version, utils::Version           |
+| 12        | varies    | $n_{coords}$      | Genomic coordinates, grm::Coordinates     |
+| $n_{coords}$ + 12 | varies | $n_{samps}$  | Sample names, grm::Samples                |
+| $n_{samps} + n_{coords} +12$ | | | Total    |
 
-| offset | field    | type      | size (bytes)  | description |
-| ---    | ---      | ---       | ---           | ---         |
-| 0      | magic    | uint32_t  | 4             | File signature (0x47524D00 = "GRM\0") |
-| 4      | version  | struct version | 4        | Program version: major/minor/micro |
-| 8      | date     | struct date    | 4        | Launch time: year/month/day/hour/sec |
-| 12     | user     | Array\<char\>  | 4 + len  | Username of person who ran the program |
-| varies | contig   | Array\<char\>  | 4 + len  | Chromosome or contig name |
-| varies | markers  | Array\<uint32_t\> | 4 + 4×len | Marker positions used for GRM computation |
-| varies | samples  | Array\<Array\<char\>\> | 4 + Σ(4 + len_i) | Sample IDs in column order of the GRM |
+
+**Genomic coordinates**
+
+| offset    | type      | size      | description                               |
+| (bytes)   |           | (bytes)   |                                           |
+| --------- | --------- | --------- | ----------------------------------------- |
+| 0             | uint32_t  | 4         | $l_{contig}=$ strlen(contig name)         |
+| 4 | char[]    | $n_{contig} = l$      | Contig name chars, sizeof(char) = 1 byte  |
+| $n_{contig} + 4$ | uint32_t | 4  | Number of positions ($l_{pos}$)           |
+| $n_{contig} + 8$ | uint32_t | $n_{pos} = 4 l_{pos}$ | loci positions on contig |
+| $n_{coords} =n_{contig} + n_{pos} + 8$  | |          Total                 |
 
 
+**Sample names**
+
+| offset    | type      | size      | description                               |
+| (bytes)   |           | (bytes)   |                                           |
+| --------- | --------- | --------- | ----------------------------------------- |
 
 ### Payload
 
-The payload is the upper triangular and diagonal components of the
+Given $N$ samples, the payload is the upper triangular components of the
 $N \times N$ GRM stored as an array of $N(N+1)/2$ 32-bit floating point
 numbers in row-major order. While the genotype-based GRM will not produce
 fractional values, the expected count GRMs will, making `float32` an

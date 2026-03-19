@@ -2,10 +2,13 @@
 #ifndef HEADER_CONSTANTS_H
 #define HEADER_CONSTANTS_H
 
-#include <string>
+#include "utils.h"
+
 
 namespace constants {
-    std::string version = std::string("0.0.1");
+
+constexpr utils::Version PROG_VERSION { 0, 0, 1 };
+
 }
 
 #endif

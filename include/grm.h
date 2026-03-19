@@ -34,6 +34,7 @@
 #include <cstdio>
 #include <cstddef>
 #include <cstdlib>
+#include <cstdint>
 #include <cstring>
 #include <cctype>
 #include <memory>
@@ -41,6 +42,8 @@
 #include <string>
 
 #include "constants.h"
+#include "utils.h"
+
 
 
 // The algorithm for getting the array idx from matrix indexes is simply
@@ -75,6 +78,15 @@
 
 namespace grm {
 
+
+// Recall that the magic number is simply GRM\0 in hex,
+// 0x47 = G, 0x52 = R, and so on.  The magic number provides
+// a simple means to determine file type when parsing.
+constexpr uint32_t FILE_TYPE_SPEC = 0x47524D00;
+constexpr utils::Version FILE_VERSION = { 0, 0, 0 };
+constexpr char[] FILE_SUFFIX = ".grm";
+
+
 enum STATUS { 
     SUCCESS, 
     FAILED, 
@@ -87,6 +99,7 @@ enum STATUS {
     ERROR_FILE_NOT_OPEN,
     ERROR_NULLPTR_ARG,
     ERROR_INVALID_ARG,
+    ERROR_NOT_A_GRM_FILE,
 };
 
 
@@ -114,8 +127,8 @@ struct Coordinates {
 
     // Data Fields
     std::string contig;
-    size_t len;
-    std::unique_ptr<size_t[]> pos;
+    uint64_t len;
+    std::unique_ptr<uint64_t[]> pos;
 };
 
 
@@ -136,7 +149,7 @@ STATUS read(io::FileIO* fio, Coordinates* coords);
 //
 struct Samples {
     Samples(): len(0), names(nullptr) {};
-    Samples(size_t n_samples): 
+    Samples(uint64_t n_samples): 
         len(n_samples), 
         names(len == 0 ? nullptr : std::make_unique<std::string[]>(len)) {};
 
@@ -147,7 +160,7 @@ struct Samples {
     Samples& operator=(Samples&& other);
 
     // Data Fields
-    size_t len;               //number of samples
+    uint64_t len;               //number of samples
     std::unique_ptr<std::string[]> names;
 
 };
@@ -174,12 +187,7 @@ STATUS read(io::FileIO* fio, Samples* samples);
 // Header
 struct Hdr {
 
-    Hdr()
-        : version(""),
-        grm_type(UNSPECIFIED),
-        coords(std::make_unique<Coordinates>),
-        samples(std::make_unique<Samples>) {};
-
+    Hdr();
     Hdr(Hdr&) = delete;
     Hdr& operator=(Hdr&) = delete;
 
@@ -187,7 +195,9 @@ struct Hdr {
     Hdr& operator=(Hdr&&);
 
     // Data Fields
-    std::string version;
+    utils::Version prog_version;
+    utils::Version file_version;
+
     GrmType grm_type;
     std::unique_ptr<Coordinates> coords;
     std::unique_ptr<Samples> samples;
@@ -218,15 +228,16 @@ STATUS read(io::FileIO *fio, Hdr *hdr);
 //
 // @param n_samples of the GRM.
 //
-class Grm {
-public:
+struct Grm {
     // 
-    Grm(const size_t n_samples);
+    Grm();
+    Grm(uint64_t n_samps);
 
     Grm(const Grm&)=delete;                          
-    Grm(Grm&&)=delete;
     Grm& operator=(const Grm&)=delete;
-    Grm& operator=(Grm&&)=delete;
+
+    Grm(Grm&&);
+    Grm& operator=(Grm&&);
                                             
     // Unchecked indexes when setting and getting of matrix values
     float operator()(const size_t i, const size_t j) const;
@@ -236,12 +247,12 @@ public:
     STATUS set(const size_t i, const size_t j, const float val); 
     STATUS get(const size_t i, const size_t j, float *val) const; 
 
-    size_t size() const;
+    size_t size();
 
-private:
-    const size_t n_samples_;
-    std::unique_ptr<float[]> data_;
-    size_t midx_to_arr_(const size_t&, const size_t&) const;
+    STATUS midx_to_arr(const size_t i, const size_t j, size_t* idx) const;
+
+    uint64_t n_samples;
+    std::unique_ptr<float[]> data;
 };
 
 // @title: Write meta-data and computed grm elements to file

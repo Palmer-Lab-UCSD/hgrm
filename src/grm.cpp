@@ -60,12 +60,8 @@
 ////////////////////////////////////////////////////////////////////
 
 grm::Coordinates::Coordinates(Coordinates&& other)
-    : len(0), contig(""), pos(nullptr) {
-    len = other.len;
-    contig = other.contig;
-    pos = std::move(other.pos);
+    : len(other.len), contig(other.contig), pos(std::move(other.pos)) {
 
-    other.pos=nullptr;
     other.len = 0;
     other.contig = "";
 }
@@ -100,7 +96,7 @@ grm::STATUS write(io::FileIO* fio, const Coordinates* coords) {
     size_t nwritten = 0;
 
     // write contig name to file
-    size_t nchar = coords->contig.size();
+    uint64_t nchar = coords->contig.size();
     nwritten = fwrite(&nchar, sizeof(nchar), 1, fio->fid);
     if (nwritten != 1)
         return grm::ERROR_ON_WRITE;
@@ -109,20 +105,20 @@ grm::STATUS write(io::FileIO* fio, const Coordinates* coords) {
             sizeof(char), 
             nchar,
             fio->fid);
-    if (nwritten != nchar)
+    if (static_cast<uint64_t>(nwritten) != nchar)
         return grm::ERROR_ON_WRITE;
 
     // write positions
-    size_t npos = coords->len;
+    uint64_t npos = coords->len;
     nwritten = fwrite(&npos, sizeof(npos), 1, fio->fid);
     if (nwritten != 1)
         return grm::ERROR_ON_WRITE;
 
     nwritten = fwrite(coords->pos.get(), 
-            sizeof(size_t),
+            sizeof(uint64_t),
             npos,
             fio->fid);
-    if (nwritten != npos)
+    if (static_cast<uint64_t>(nwritten) != npos)
         return grm::ERROR_ON_WRITE;
 
     return grm::SUCCESS;
@@ -147,8 +143,8 @@ grm::STATUS read(io::FileIO* fio, Coordinates* coords) {
     size_t nread = 0;
 
     // read contig name
-    size_t size_contig_name = 0;
-    nread = fread(&size_contig_name, sizeof(size_t), 1, fio->fid);
+    uint64_t size_contig_name = 0;
+    nread = fread(&size_contig_name, sizeof(size_contig_name), 1, fio->fid);
     if (nread != 1)
         return grm::ERROR_ON_READ;
 
@@ -156,22 +152,22 @@ grm::STATUS read(io::FileIO* fio, Coordinates* coords) {
     std::memset(buffer.get(), '\0', size_contig_name + 1);
 
     nread = fread(buffer.get(), sizeof(char), size_contig_name, fio->fid);
-    if (nread != size_contig_name)
+    if (static_cast<uint64_t>(nread) != size_contig_name)
         return grm::ERROR_ON_READ;
 
     tmpc.contig = std::string(buffer, size_contig_name);
 
     // read in positions
-    size_t npos = 0;
-    nread = fread(&npos, sizeof(size_t), 1, fio->fid);
+    uint64_t npos = 0;
+    nread = fread(&npos, sizeof(npos), 1, fio->fid);
     if (nread != 1)
         return grm::ERROR_ON_READ;
 
     tmpc.len = npos;
 
-    tmpc.pos = std::make_unique<size_t[]>(npos);
-    nread = fread(tmpc.pos.get(), sizeof(size_t), npos, fio->fid);    
-    if (nread != npos)
+    tmpc.pos = std::make_unique<uint64_t[]>(npos);
+    nread = fread(tmpc.pos.get(), sizeof(uint64_t), npos, fio->fid);    
+    if (static_cast<uint64_t>(nread) != npos)
         return grm::ERROR_ON_READ;
 
     *coords = std::move(tmpc);
@@ -184,10 +180,8 @@ grm::STATUS read(io::FileIO* fio, Coordinates* coords) {
 ////////////////////////////////////////////////////////////////////
 
 grm::Samples::Samples(grm::Samples&& other) 
-    : len(other.len), names(nullptr) {
-        names = std::move(other.names);
+    : len(other.len), names(std::move(other.names)) {
         other.len = 0;
-        other.names = nullptr;
 }
 
 
@@ -199,7 +193,6 @@ grm::Samples& grm::Samples::operator=(grm::Samples&& other) {
     names = std::move(other.names);
     
     other.len = 0;
-    other.names = nullptr;
     
     return *this;
 }
@@ -216,8 +209,8 @@ grm::STATUS write(io::FileIO* fio, const grm::Samples* samples) {
         return grm::ERROR_NULLPTR_ARG;
 
     size_t nwritten = 0;
-    size_t nsamps = samples->len;
-    nwritten = fwrite(&nsamps, sizeof(size_t), 1, fio->fid);
+    uint64_t nsamps = samples->len;
+    nwritten = fwrite(&nsamps, sizeof(nsamps), 1, fio->fid);
     if (nwritten != 1)
         return grm::ERROR_ON_WRITE;
 
@@ -227,24 +220,24 @@ grm::STATUS write(io::FileIO* fio, const grm::Samples* samples) {
     // number of characters.  Here I find that number and store in
     // the binary file.
     
-    size_t nchar_max = 0;
-    size_t tmp = 0;
-    for (size_t n = 0; n < nsamps; n++)
+    uint64_t nchar_max = 0;
+    uint64_t tmp = 0;
+    for (uint64_t n = 0; n < nsamps; n++)
         if ((tmp = samples->names[n].size()) > nchar_max) nchar_max = tmp;
 
     if (nchar_max == 0)
         return grm::ERROR_INVALID_ARG;
 
-    nwritten = fwrite(&nchar_max, sizeof(size_t), 1, fio->fid);
+    nwritten = fwrite(&nchar_max, sizeof(nchar_max), 1, fio->fid);
     if (nwritten != 1)
         return grm::ERROR_ON_WRITE;
 
     // Write each string to file;
-    size_t nchar = 0;
-    for (size_t n = 0; n < nsamps; n++) {
+    uint64_t nchar = 0;
+    for (uint64_t n = 0; n < nsamps; n++) {
         nchar = samples->names[n].size(); 
 
-        nwritten = fwrite(&nchar, sizeof(size_t), 1, fio->fid);
+        nwritten = fwrite(&nchar, sizeof(nchar), 1, fio->fid);
         if (nwritten != 1)
             return grm::ERROR_ON_WRITE;
 
@@ -266,14 +259,17 @@ grm::STATUS read(io::FileIO* fio, grm::Samples* samples) {
     if (!fio->fid)
         return grm::ERROR_NULLPTR_ARG;
 
+    if (!samples)
+        return grm::ERROR_NULLPTR_ARG;
+
     // I create a temporary Sample class, because I don't want the 
     // input samples instance to partial update upon an error
     grm::Samples tmp_samps {};
 
     size_t nread;
-    size_t n_samples = 0;
+    uint64_t n_samples = 0;
 
-    nread = fread(&n_samples, sizeof(size_t), 1, fio->fid);
+    nread = fread(&n_samples, sizeof(n_samples), 1, fio->fid);
     if (nread != 1)
         return grm::ERROR_ON_READ;
     
@@ -297,7 +293,7 @@ grm::STATUS read(io::FileIO* fio, grm::Samples* samples) {
             return grm::ERROR_ON_READ;
         
         nread = fread(buffer.get(), sizeof(char), nchar, fio->fid);
-        if (nread != nchar)
+        if (static_cast<uint64_t>(nread) != nchar)
             return grm::ERROR_ON_READ;
 
         tmp_samps.names[n] = std::string(buffer, nchar);
@@ -315,37 +311,41 @@ grm::STATUS read(io::FileIO* fio, grm::Samples* samples) {
 // HDR CLASS
 ////////////////////////////////////////////////////////////////////
 
-grm::Hdr::Hdr(Hdr&& other)
-    : version(other.version),
-    grm_type(other.grm_type),
-    coords(nullptr),
-    samples(nullptr) {
+grm::Hdr::Hdr() 
+    : prog_version(constants::PROG_VERSION),
+    file_version(grm::FILE_VERSION),
+    grm_type(UNSPECIFIED), coords(nullptr), samples(nullptr) {};
 
-    other.version = "";
+
+grm::Hdr::Hdr(Hdr&& other)
+    : prog_version(other.prog_version),
+    file_version(other.file_version),
+    grm_type(other.grm_type),
+    coords(nullptr), samples(nullptr) {
+
+    other.prog_version = constants::PROG_VERSION;
+    other.file_version = grm::FILE_VERSION;
     other.grm_type = grm::UNSPECIFIED;
 
-    *coords = std::move(*other.coords);
-    other.coords = nullptr;
-
-    samples = std::move(*other.samples);
-    other.samples = nullptr;
+    coords = std::move(other.coords);
+    samples = std::move(other.samples);
 }
 
 grm::Hdr& grm::Hdr::operator=(Hdr&& other) {
     if (this == &other)
         return *this;
 
-    version = other.version;
-    other.version = "";
+    prog_version = other.prog_version;
+    other.prog_version = constants::PROG_VERSION;
+
+    file_version = other.file_version;
+    other.file_version = FILE_VERSION;
 
     grm_type = other.grm_type;
     other.grm_type = grm::UNSPECIFIED;
 
-    *coords = std::move(*other.coords);
-    other.coords = nullptr;
-
-    *samples = std::move(*other.samples);
-    other.samples = nullptr;
+    coords = std::move(other.coords);
+    samples = std::move(other.samples);
     return *this;
 }
 
@@ -399,9 +399,9 @@ grm::STATUS read(io::FileIO* fio, Hdr* hdr) {
     Hdr tmp_hdr {};
 
     size_t nread = 0;
-    size_t nchar_version = 0;
+    uint64_t nchar_version = 0;
 
-    nread = fread(&nchar_version, sizeof(size_t), 1, fio->fid);
+    nread = fread(&nchar_version, sizeof(nchar_version), 1, fio->fid);
     if (nread != 1)
         return grm::ERROR_ON_READ;
 
@@ -440,87 +440,159 @@ grm::STATUS read(io::FileIO* fio, Hdr* hdr) {
 // to store the upper triagonal and diagonal element values.  
 // Consequently, the size of the array storing the data is n*(n +1)/2.
 //
-grm::Grm::Grm(const size_t n_samples)
-    : n_samples_(n_samples)
-        data_(size() != 0 ? std::make_unique<float[]>(size()) : nullptr) {
 
-    if (data_)
-       std::memset(data_.get(), 0, size());
+grm::Grm::Grm(): n_samples(0), data(nullptr) {};
+
+grm::Grm::Grm(uint64_t n_samps)
+    : n_samples(n_samps)
+        data(size() != 0 ? std::make_unique<float[]>(size()) : nullptr) {
+
+    if (data)
+       std::memset(data.get(), 0, size());
+}
+
+grm::Grm::Grm(grm::Grm&& other)
+    : n_samples(other.n_samples), data(std::move(other.data)) {
+    other.n_samples = 0;    
+};
+
+grm::Grm& grm::Grm::operator=(grm::Grm&& other) {
+    if (this == &other)
+        return *this;
+
+    n_samples = other.n_samples;
+    other.n_samples = 0;
+
+    data = std::move(other.data);
+
+    return *this;
 }
 
 // The number of upper diagonal + diagonal elements of the GRM
-size_t grm::Grm::size() const { return n_samples * (n_samples + 1) / 2; };
+uint64_t grm::Grm::size() const { return n_samples * (n_samples + 1) / 2; };
 
 
-grm::STATUS grm::Grm::midx_to_arr_(const size_t i, const size_t j, size_t *idx) const {
+grm::STATUS grm::Grm::midx_to_arr(const uint64_t i, const uint64_t j,
+        uint64_t* idx) const {
 
-    if (i >= n_samples_ || j >= n_samples_)
+    if (i >= n_samples || j >= n_samples)
         return grm::ERROR_IDX_ARR_BOUNDS;
 
     // remember that by symmetry, the matrix is equal to its transpose
     if (i <= j)
-        *idx = MATRIX_IDX_TO_ARRAY(i, j, n_samples_);
+        *idx = MATRIX_IDX_TO_ARRAY(i, j, n_samples);
     else 
-        *idx = MATRIX_IDX_TO_ARRAY(j, i, n_samples_);
+        *idx = MATRIX_IDX_TO_ARRAY(j, i, n_samples);
 
     return grm::SUCCESS;
 }
 
 
-float grm::Grm::operator()(const size_t i, const size_t j) const {
-    return data_[MATRIX_IDX_TO_ARRAY(i, j, n_samples_)];
+float grm::Grm::operator()(const uint64_t i, const uint64_t j) const {
+    return data[MATRIX_IDX_TO_ARRAY(i, j, n_samples)];
 }
 
 
-float& grm::Grm::operator()(const size_t i, const size_t j) {
-    return data_[MATRIX_IDX_TO_ARRAY(i, j, n_samples_)];
+float& grm::Grm::operator()(const uint64_t i, const uint64_t j) {
+    return data[MATRIX_IDX_TO_ARRAY(i, j, n_samples)];
 }
 
 
-grm::STATUS grm::Grm::get(const size_t i, const size_t j, float *val) const {
-    size_t idx = 0;
+grm::STATUS grm::Grm::get(const uint64_t i, const uint64_t j, float *val) const {
+    uint64_t idx = 0;
     grm::STATUS status = grm::FAILED;
     if ((status = midx_to_arr_(i, j, &idx)) != grm::SUCCESS) 
         return status;
 
-    *val = data_[idx];
+    *val = data[idx];
 
     return status;
 }
 
 
-grm::STATUS grm::Grm::set(const size_t i, const size_t j, const float val) {
-    size_t idx = 0;
+grm::STATUS grm::Grm::set(const uint64_t i, const uint64_t j, const float val) {
+    uint64_t idx = 0;
     grm::STATUS status = grm::STATUS::FAILED;
     if ((status = midx_to_arr_(i, j, &idx)) != grm::STATUS::SUCCESS) 
         return status;
 
-    data_[idx] = val;
+    data[idx] = val;
 
     return status;
 }
 
 
-grm::STATUS grm::Grm::write(io::FileIO *fio, const Hdr *hdr) const {
+grm::STATUS grm::write(io::FileIO *fio, 
+        const grm::Hdr* hdr, const grm::Grm* grmatrix) const {
+    
+    if (!fio || !fio->fid || !hdr || !grm)
+        return grm::ERROR_NULLPTR_ARG;
 
-    std::unique_ptr<FILE> fid = make_unique<FILE>(fopen(filename, "wb"));
+    size_t nwritten = 0;
 
-    size_t size_written = fwrite(&dims_, sizeof(Dims), 1, fid.get());
-    if (size_written < 1)
-        return grm::STATUS::ERROR_ON_WRITE;
+    // write file type specification
+    nwritten = fwrite(&FILE_TYPE_SPEC, 
+            sizeof(FILE_TYPE_SPEC), 1, fio->fid);
+    if (nwritten != 1)
+        return grm::ERROR_ON_WRITE;
 
-    size_written = fwrite(data_.get(), 
-            sizeof(float), 
-            size(),
-            fid.get());
+    grm::STATUS status = grm::UNSPECIFIED;
 
-    if (size_written < size())
-        return grm::STATUS::ERROR_ON_WRITE;
+    // srite meta data stored in header;
+    if ((status = grm::write(fio, hdr)) != grm::SUCCESS)
+        return status;
 
-    return grm::STATUS::SUCCESS;
+    uint64_t ndata = static_cast<uint64_t>(grmatrix->size());
+    nwritten = fwrite(&ndata, sizeof(ndata), 1, fio->fid);
+    if (nwritten != 1)
+        return grm::ERROR_ON_WRITE;
+
+    nwritten = fwrite(grmatrix->data.get(), 
+            sizeof(grmatrix->data[0]),
+            ndata,
+            fio->fid);
+    if (static_cast<uint64_t>(nwritten) != ndata)
+        return grm::ERROR_ON_WRITE;
+
+    return grm::SUCCESS;
 }
 
 
-grm::Grm grm::Grm::read(io::FileIO *fio) {
-    return grm::STATUS;
+grm::STATUS grm::read(io::FileIO *fio,
+        grm::Hdr* hdr, grm::Grm* grmatrix) {
+    
+    if (!fio || !fio->fid || !hdr || !grmatrix)
+        return grm::ERROR_ON_READ;
+
+    size_t nread = 0;
+    uint32_t ftype = 0;
+
+    nread = fread(&ftype, sizeof(ftype), 1, fio->fid);
+    if (nread != 1)
+        return grm::ERROR_ON_READ;
+
+    if (ftype != FILE_TYPE_SPEC)
+        return grm::ERROR_NOT_A_GRM_FILE;
+
+    grm::STATUS status = grm::read(fio, hdr);
+
+    uint64_t n_samples = hdr->Samples->len;
+    grm::Grm tmp_grm { n_samples };
+    uint64_t ndata = 0;
+    nread = fread(&ndata, sizeof(ndata), 1, fio->fid);
+    if (nread != 1)
+        return grm::ERROR_ON_READ;
+
+    if (ndata != n_samples*(n_samples + 1) / 2)
+        return grm::ERROR_ON_READ;
+
+    nread = fread(tmp_grm.data.get(), 
+            sizeof(tmp_grm.data[0]), ndata, fio->fid);
+
+    if (nread != ndata)
+        return grm::ERROR_ON_READ;
+
+    *grmatrix = std::move(tmp_grm);
+
+    return grm::SUCCESS;
 }
