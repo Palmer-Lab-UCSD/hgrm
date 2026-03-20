@@ -1,11 +1,11 @@
+#ifndef HEADER_IO_H
+#define HEADER_IO_H
 
 #include <cstdio>
 #include <string>
 #include <memory>
 
 
-#ifndef HEADER_TEXTIO_H
-#define HEADER_TEXTIO_H
 
 
 namespace io {

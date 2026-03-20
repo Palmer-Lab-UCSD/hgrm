@@ -84,7 +84,7 @@ namespace grm {
 // a simple means to determine file type when parsing.
 constexpr uint32_t FILE_TYPE_SPEC = 0x47524D00;
 constexpr utils::Version FILE_VERSION = { 0, 0, 0 };
-constexpr char[] FILE_SUFFIX = ".grm";
+constexpr char FILE_SUFFIX[] = ".grm";
 
 
 enum STATUS { 
@@ -119,8 +119,8 @@ struct Coordinates {
         len(len), 
         pos(std::make_unique<size_t[]>(len)) {};
 
-    Coordinates(Coordinates&) = delete;
-    Coordinates& operator=(Coordinates&) = delete;
+    Coordinates(const Coordinates&) = delete;
+    Coordinates& operator=(const Coordinates&) = delete;
 
     Coordinates(Coordinates&& other);
     Coordinates& operator=(Coordinates&& other);
@@ -188,8 +188,8 @@ STATUS read(io::FileIO* fio, Samples* samples);
 struct Hdr {
 
     Hdr();
-    Hdr(Hdr&) = delete;
-    Hdr& operator=(Hdr&) = delete;
+    Hdr(const Hdr&) = delete;
+    Hdr& operator=(const Hdr&) = delete;
 
     Hdr(Hdr&&);
     Hdr& operator=(Hdr&&);
@@ -244,12 +244,13 @@ struct Grm {
     float& operator()(const size_t i, const size_t j);
 
     // Checked indexes when setting and getting of matrix values
-    STATUS set(const size_t i, const size_t j, const float val); 
-    STATUS get(const size_t i, const size_t j, float *val) const; 
+    STATUS set(const uint64_t i, const uint64_t j, const float val); 
+    STATUS get(const uint64_t i, const uint64_t j, float *val) const; 
 
-    size_t size();
+    uint64_t size() const;
 
-    STATUS midx_to_arr(const size_t i, const size_t j, size_t* idx) const;
+    STATUS midx_to_arr(const uint64_t i, 
+            const uint64_t j, uint64_t* idx) const;
 
     uint64_t n_samples;
     std::unique_ptr<float[]> data;
