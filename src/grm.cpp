@@ -337,12 +337,12 @@ grm::STATUS grm::write(io::FileIO* fio, const Hdr* hdr) {
 
     size_t nwritten = 0;
     uint32_t tmp_version = hdr->prog_version.pack();
-    nwritten = fwrite(&tmp_version, sizeof(tmp_version), 1, fid->fio);
+    nwritten = fwrite(&tmp_version, sizeof(tmp_version), 1, fio->fid);
     if (nwritten != 1)
         return grm::ERROR_ON_WRITE;
 
     tmp_version = hdr->file_version.pack();
-    nwritten = fwrite(&tmp_version, sizeof(tmp_version), 1, fid->fio);
+    nwritten = fwrite(&tmp_version, sizeof(tmp_version), 1, fio->fid);
     if (nwritten != 1)
         return grm::ERROR_ON_WRITE;
 
@@ -369,12 +369,12 @@ grm::STATUS grm::read(io::FileIO* fio, Hdr* hdr) {
 
     size_t nread = 0;
     uint32_t tmp_version_num = 0;
-    nread = fread(&tmp_version_num, sizeof(tmp_version_num), 1, fid->fio);
+    nread = fread(&tmp_version_num, sizeof(tmp_version_num), 1, fio->fid);
     if (nread != 1)
         return grm::ERROR_ON_READ;
     tmp_hdr.prog_version = utils::Version::unpack(tmp_version_num);
 
-    nread = fread(&tmp_version_num, sizeof(tmp_version_num), 1, fid->fio);
+    nread = fread(&tmp_version_num, sizeof(tmp_version_num), 1, fio->fid);
     if (nread != 1)
         return grm::ERROR_ON_READ;
     tmp_hdr.file_version = utils::Version::unpack(tmp_version_num);

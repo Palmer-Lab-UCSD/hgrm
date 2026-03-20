@@ -13,7 +13,7 @@ struct Version {
     uint16_t micro;
 
     // pack as 8, 12, 12 for 32 bits in total
-    uint32_t pack() {
+    uint32_t pack() const {
         return (static_cast<uint32_t>(major) << 24
             | static_cast<uint32_t>(minor & 0x0FFF) << 12 
             | static_cast<uint32_t>(micro & 0x0FFF));

@@ -240,8 +240,8 @@ struct Grm {
     Grm& operator=(Grm&&);
                                             
     // Unchecked indexes when setting and getting of matrix values
-    float operator()(const size_t i, const size_t j) const;
-    float& operator()(const size_t i, const size_t j);
+    float operator()(const uint64_t i, const uint64_t j) const;
+    float& operator()(const uint64_t i, const uint64_t j);
 
     // Checked indexes when setting and getting of matrix values
     STATUS set(const uint64_t i, const uint64_t j, const float val); 
@@ -266,7 +266,7 @@ struct Grm {
 // @param hdr: an instance of grm::Hdr with important meta data
 // @return grm::STATUS: 
 //
-STATUS write(io::FileIO *fio, const Hdr *hdr, const Grm *grmatrix) const;
+STATUS write(io::FileIO *fio, const Hdr *hdr, const Grm *grmatrix);
 STATUS read(io::FileIO *fio, const Hdr *hdr, Grm *grmatrix);
 
 
