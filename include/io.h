@@ -5,9 +5,6 @@
 #include <string>
 #include <memory>
 
-
-
-
 namespace io {
 
 enum STATUS { 
@@ -78,12 +75,12 @@ FileIO open(const char *filename, const char *mode) {
 // @title: File statistics
 // @description: This object is returned by any function meant to calculate
 //      file character statistics.
-struct FileStats {
-    size_t nchar = 0;
-    size_t nwords = 0;
-    size_t nlines = 0;
-    size_t nblanklines = 0;
-}
+// struct FileStats {
+//     size_t nchar = 0;
+//     size_t nwords = 0;
+//     size_t nlines = 0;
+//     size_t nblanklines = 0;
+// }
 
 
 // @title: word count
@@ -94,12 +91,12 @@ struct FileStats {
 // @param fs: the structure that the file statistics will be stored
 // @return a STATUS code that specifies whether the function was successful
 //      or failed.
-STATUS wc(TextIO *tio, FileStats *fs);
+// STATUS wc(TextIO *tio, FileStats *fs);
 
 
 
 
-STATUS getline(TextIO *tio, Array<char> linebuf);
+// STATUS getline(TextIO *tio, Array<char> linebuf);
 }
 
 #endif

@@ -9,51 +9,8 @@
 //
 //
 
-#include <grm.h>
+#include "grm.h"
 
-// int grm::details::num_lines_in_file(FILE *fid, size_t *num_lines) {
-//     // TODO: errno, need to reset?
-// 
-//     size_t line_num = 0;
-//     size_t word_len = 0;
-//     int c;
-//     while ((c = fgetc(fid)) != EOF) {
-// 
-//         if (c == '\n' && word_len != 0) {
-//             line_num++;
-//             word_len = 0;
-//         } else if (c != '\n')
-//             word_len++;
-//     }
-// 
-//     if (ferror(fid))
-//         return fseek(fid, 0, SEEK_SET) == 0 ? -1 : -3;
-// 
-//     if (feof(fid) == 0)
-//         return fseek(fid, 0, SEEK_SET) == 0 ? -2 : -3;
-// 
-//     *num_lines = line_num;
-//     return fseek(fid, 0, SEEK_SET) == 0 ? 0 : -3;
-// }
-
-
-// int grm::details::get_size_t(FILE *fid, size_t *val) {
-// 
-//     std::string s { "" };
-//     while (std::getline(fid, s))
-//         if (s.size() < )
-// 
-//     int c;
-//     for (int i = 0; (c = fgetc(fid)) != EOF && i < max_bitsize_size_t; i++) {
-//         if (c == '\n')
-//             break;
-//         s[i] = c; 
-//     }
-//     s[i] = '\0';
-// 
-//     return 0;
-// }
-// 
 
 ////////////////////////////////////////////////////////////////////
 // COORDINATES CLASS
@@ -145,7 +102,7 @@ grm::STATUS grm::read(io::FileIO* fio, Coordinates* coords) {
     if (static_cast<uint64_t>(nread) != size_contig_name)
         return grm::ERROR_ON_READ;
 
-    tmpc.contig = std::string(buffer, size_contig_name);
+    tmpc.contig = std::string(buffer.get(), size_contig_name);
 
     // read in positions
     uint64_t npos = 0;
@@ -266,9 +223,10 @@ grm::STATUS grm::read(io::FileIO* fio, grm::Samples* samples) {
     std::unique_ptr<char[]> buffer = std::make_unique<char[]>(nchar_max+1);
     std::memset(buffer.get(), '\0', nchar_max + 1);
 
-    size_t nchar = 0;
-    for (size_t n = 0; n < n_samples; n++) {
-        nread = fread(&nchar, sizeof(size_t), 1, fio->fid);
+    // read sample names
+    uint64_t nchar = 0;
+    for (uint64_t n = 0; n < n_samples; n++) {
+        nread = fread(&nchar, sizeof(nchar), 1, fio->fid);
         if (nread != 1)
             return grm::ERROR_ON_READ;
         
@@ -276,7 +234,7 @@ grm::STATUS grm::read(io::FileIO* fio, grm::Samples* samples) {
         if (static_cast<uint64_t>(nread) != nchar)
             return grm::ERROR_ON_READ;
 
-        tmp_samps.names[n] = std::string(buffer, nchar);
+        tmp_samps.names[n] = std::string(buffer.get(), nchar);
 
         std::memset(buffer.get(), '\0', nchar);
         nchar = 0;
@@ -529,7 +487,7 @@ grm::STATUS grm::write(io::FileIO *fio,
 }
 
 
-grm::STATUS grm::read(io::FileIO *fio,
+grm::STATUS grm::read(io::FileIO* fio,
         grm::Hdr* hdr, grm::Grm* grmatrix) {
     
     if (!fio || !fio->fid || !hdr || !grmatrix)

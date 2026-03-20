@@ -41,6 +41,7 @@
 #include <utility>
 #include <string>
 
+#include "io.h"
 #include "constants.h"
 #include "utils.h"
 
@@ -114,10 +115,10 @@ enum GrmType {
 // @title: Store genomic coordinates used in GRM calculation
 struct Coordinates {
     Coordinates(): contig(""), len(0), pos(nullptr) {};
-    Coordinates(const char* contig, const size_t len)
-        : contig(contig),
-        len(len), 
-        pos(std::make_unique<size_t[]>(len)) {};
+    Coordinates(char* contig_in, uint64_t len_in)
+        : contig(contig_in == nullptr ? "" : contig_in),
+        len(contig == "" ? 0 : len_in), 
+        pos(std::make_unique<uint64_t[]>(len)) {};
 
     Coordinates(const Coordinates&) = delete;
     Coordinates& operator=(const Coordinates&) = delete;
@@ -266,8 +267,8 @@ struct Grm {
 // @param hdr: an instance of grm::Hdr with important meta data
 // @return grm::STATUS: 
 //
-STATUS write(io::FileIO *fio, const Hdr *hdr, const Grm *grmatrix);
-STATUS read(io::FileIO *fio, const Hdr *hdr, Grm *grmatrix);
+STATUS write(io::FileIO* fio, const Hdr *hdr, const Grm *grmatrix);
+STATUS read(io::FileIO* fio, Hdr* hdr, Grm* grmatrix);
 
 
 }
