@@ -104,6 +104,13 @@ $(TEST_TARGET_PRG): $(TEST_DIR)/main.cpp $(TEST_OBJS) $(APP_OBJS) | $(TARGET)
 $(BUILD_DIR)/test_%.o: $(TEST_DIR)/test_%.cpp
 	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(OBJ_OUTPUT_OPTIONS) $<
 
+TEST_GRM_PRG = $(BUILD_DIR)/test_grm
+test_grm: $(TEST_GRM_PRG)
+	./$(TEST_GRM_PRG)
+
+$(TEST_GRM_PRG): $(TEST_DIR)/main.cpp $(BUILD_DIR)/test_grm.o $(BUILD_DIR)/grm.o | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^ -lgtest
+
 data: | $(TEST_DATA_DST)
 
 $(BUILD_DIR)/geno_test_data%: $(TEST_DIR)/geno_test_data%

@@ -50,7 +50,7 @@ struct FileIO {
 // @param filename: name and path of file to open
 // @param mode: a mode in the set of those in the C library function fopen
 // @return a pointer to opened file
-FileIO open(const char *filename, const char *mode) {
+inline FileIO open(const char *filename, const char *mode) {
     if (!mode  || !filename)
         return nullptr;
 
