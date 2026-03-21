@@ -25,7 +25,7 @@ TEST(TestCoords, ConstructorValidInput) {
     std::string contig { contig_in };
     uint64_t len_in = 1000;
 
-    grm::Coordinates coords { contig_in, len };
+    grm::Coordinates coords { contig_in, len_in };
 
     EXPECT_EQ(coords.contig, contig);
     EXPECT_EQ(coords.len, len_in);

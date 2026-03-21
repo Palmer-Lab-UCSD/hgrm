@@ -58,8 +58,8 @@ FileIO open(const char *filename, const char *mode) {
     if (!fid)
         return nullptr;
 
-    FileIO fio = FileIO(fid);
-    return std::move(fio);
+    // compiler implements elision
+    return FileIO(fid);
 }
 
 

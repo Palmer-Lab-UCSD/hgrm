@@ -118,7 +118,7 @@ struct Coordinates {
     Coordinates(char* contig_in, uint64_t len_in)
         : contig(contig_in == nullptr ? "" : contig_in),
         len(contig == "" ? 0 : len_in), 
-        pos(std::make_unique<uint64_t[]>(len)) {};
+        pos(len == 0 ? nullptr : std::make_unique<uint64_t[]>(len)) {};
 
     Coordinates(const Coordinates&) = delete;
     Coordinates& operator=(const Coordinates&) = delete;

@@ -17,8 +17,8 @@
 ////////////////////////////////////////////////////////////////////
 
 grm::Coordinates::Coordinates(Coordinates&& other)
-    : len(other.len), 
-    contig(std::move(other.contig)),
+    : contig(std::move(other.contig)),
+    len(other.len), 
     pos(std::move(other.pos)) {
 
     other.len = 0;
