@@ -252,7 +252,9 @@ grm::STATUS grm::read(io::FileIO* fio, grm::Samples* samples) {
 grm::Hdr::Hdr() 
     : prog_version(constants::PROG_VERSION),
     file_version(grm::FILE_VERSION),
-    grm_type(UNSPECIFIED), coords(nullptr), samples(nullptr) {};
+    grm_type(UNSPECIFIED), 
+    coords(std::make_unique<Coordinates>()),
+    samples(std::make_unique<Samples>()) {};
 
 
 grm::Hdr::Hdr(Hdr&& other)
@@ -326,16 +328,16 @@ grm::STATUS grm::read(io::FileIO* fio, Hdr* hdr) {
     Hdr tmp_hdr {};
 
     size_t nread = 0;
-    uint32_t tmp_version_num = 0;
-    nread = fread(&tmp_version_num, sizeof(tmp_version_num), 1, fio->fid);
+    uint32_t version = 0;
+    nread = fread(&version, sizeof(version), 1, fio->fid);
     if (nread != 1)
         return grm::ERROR_ON_READ;
-    tmp_hdr.prog_version = utils::Version::unpack(tmp_version_num);
+    tmp_hdr.prog_version = utils::Version::unpack(version);
 
-    nread = fread(&tmp_version_num, sizeof(tmp_version_num), 1, fio->fid);
+    nread = fread(&version, sizeof(version), 1, fio->fid);
     if (nread != 1)
         return grm::ERROR_ON_READ;
-    tmp_hdr.file_version = utils::Version::unpack(tmp_version_num);
+    tmp_hdr.file_version = utils::Version::unpack(version);
 
     nread = fread(&tmp_hdr.grm_type, sizeof(grm::GrmType), 1, fio->fid);
     if (nread != 1)
