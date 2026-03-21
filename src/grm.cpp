@@ -493,7 +493,7 @@ grm::STATUS grm::read(io::FileIO* fio,
         grm::Hdr* hdr, grm::Grm* grmatrix) {
     
     if (!fio || !fio->fid || !hdr || !grmatrix)
-        return grm::ERROR_ON_READ;
+        return grm::ERROR_NULLPTR_ARG;
 
     size_t nread = 0;
     uint32_t ftype = 0;
