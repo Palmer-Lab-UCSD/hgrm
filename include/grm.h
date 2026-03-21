@@ -49,32 +49,39 @@
 
 // The algorithm for getting the array idx from matrix indexes is simply
 //
-// i * n_samples - n_skipped_idxs + j
+// idx = i * n_samples - n_skipped_idxs + j
 //
-// where i is the matrix row index and j is the matrix column index.
+// where i is the matrix row index and j is the matrix column index. The
 // interesting term is n_skipped_idxs, this is the number of elements
 // that referencing (i, j) skip when only storing upper triangle. For
-// example, consider the following table with matrix to array indexes
+// example, suppose that i = 3 and j = 2.  Here three complete rows of
+// the matrix has been traversed, therefore the number skipped is
 //
-//  i       j       num_skipped     idx     
-//  0       0       0               0
-//  0       5       0               5
-//  1       0       0               1n - 0
-//  2       0       1               2n - 1
-//  3       0       3               3n - 3
-//  4       0       6               4n - 6
-//  
-// we see that number skipped is the number of lower triangular elements
-// of a matrix constructed from i rows,  (i-1) * i / 2.  Here, we see an
-// obvious problem, that when i = 0 we get a negative number, which doesn't
-// make sense.  This can be avoided by using the equivalent formulat
+// n_skipped_idx >= (i-1) * i / 2
 //
-// n_skipped_idxs = i * (i + 1) / 2 - i
+// if j < i, then as we are only storing the upper triangle and
+// by symmetry swap the values of i an j.  If j > i,  then the number
+// skipped in row i is i, making the total skipped,
+//
+// n_skipped_idx = i * (i - 1) / 2 + i
 //
 // making the equation above read
 //  
-//  i * (n_samples + 1) - i * (i+1)/2 + j
-#define MATRIX_IDX_TO_ARRAY(i, j, n)   ((i)*((n) + 1) - (i)*((i)+1)/2 + (j))
+//  idx = i * n_samples - i * (i - 1)/2 - i + j
+// 
+// Then let's manually validate
+//
+// n = 3
+// i    j   idx_true    idx
+// 0    0   0           0     
+// 0    1   1           1
+// 0    2   2           2
+// 1    0   --- transpose -> 0, 1 ---
+// 1    1   3           1*3 - 1*(0)/2 - 1 + 1 = 3
+// 1    2   4           1*3 - 1*(0)/2 - 1 + 2 = 4
+// 2    2   5           2*3 - 2*(1)/2 - 2 + 2 = 6 - 1 = 5
+//
+#define MATRIX_IDX_TO_ARRAY(i, j, n)   ((i)*(n) - (i)*((i)-1)/2 + (j) - (i))
 
 
 namespace grm {
