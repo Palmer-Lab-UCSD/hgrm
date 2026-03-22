@@ -108,8 +108,8 @@ TEST_GRM_PRG = $(BUILD_DIR)/test_grm
 test_grm: $(TEST_GRM_PRG)
 	./$(TEST_GRM_PRG)
 
-$(TEST_GRM_PRG): $(TEST_DIR)/main.cpp $(BUILD_DIR)/test_grm.o $(BUILD_DIR)/grm.o | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^ -lgtest
+$(TEST_GRM_PRG): $(BUILD_DIR)/test_grm.o $(BUILD_DIR)/grm.o | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^ -lgtest -lgtest_main
 
 data: | $(TEST_DATA_DST)
 

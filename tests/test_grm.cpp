@@ -16,10 +16,10 @@ TEST(TestCoords, DefaultConstructor) {
 
     std::string contig = std::string("");
 
-    EXPECT_EQ(coords.contig.size(), 0);
+    EXPECT_EQ(coords.contig.size(), static_cast<size_t>(0));
     EXPECT_EQ(coords.contig, contig);
 
-    EXPECT_EQ(coords.len, 0);
+    EXPECT_EQ(coords.len, static_cast<uint64_t>(0));
     EXPECT_EQ(coords.pos, nullptr);
 }
 
@@ -43,7 +43,7 @@ TEST(TestCoords, ConstructorInvalidInput) {
     grm::Coordinates coords { nullptr, len_in };
 
     EXPECT_EQ(coords.contig, std::string(""));
-    EXPECT_EQ(coords.len, 0);
+    EXPECT_EQ(coords.len, static_cast<uint64_t>(0));
     EXPECT_EQ(coords.pos, nullptr);
 }
 
@@ -53,7 +53,7 @@ TEST(TestCoords, ConstructorZeroLength) {
     grm::Coordinates coords { contig_in, 0 };
 
     EXPECT_EQ(coords.contig, std::string("chr1"));
-    EXPECT_EQ(coords.len, 0);
+    EXPECT_EQ(coords.len, static_cast<uint64_t>(0));
     EXPECT_EQ(coords.pos, nullptr);
 }
 
@@ -78,7 +78,7 @@ TEST(TestCoords, MoveConstructor) {
 
     // source should be in moved-from state
     EXPECT_EQ(src.contig, std::string(""));
-    EXPECT_EQ(src.len, 0);
+    EXPECT_EQ(src.len, static_cast<uint64_t>(0));
     EXPECT_EQ(src.pos, nullptr);
 }
 
@@ -95,14 +95,14 @@ TEST(TestCoords, MoveAssignment) {
     dst = std::move(src);
 
     EXPECT_EQ(dst.contig, std::string("chr3"));
-    EXPECT_EQ(dst.len, 3);
+    EXPECT_EQ(dst.len, static_cast<uint64_t>(3));
     EXPECT_NE(dst.pos, nullptr);
-    EXPECT_EQ(dst.pos[0], 10);
-    EXPECT_EQ(dst.pos[1], 20);
-    EXPECT_EQ(dst.pos[2], 30);
+    EXPECT_EQ(dst.pos[0], static_cast<uint64_t>(10));
+    EXPECT_EQ(dst.pos[1], static_cast<uint64_t>(20));
+    EXPECT_EQ(dst.pos[2], static_cast<uint64_t>(30));
 
     EXPECT_EQ(src.contig, std::string(""));
-    EXPECT_EQ(src.len, 0);
+    EXPECT_EQ(src.len, static_cast<uint64_t>(0));
     EXPECT_EQ(src.pos, nullptr);
 }
 
@@ -174,9 +174,9 @@ TEST(TestCoords, WriteReadSinglePosition) {
     ASSERT_EQ(grm::read(&fio, &dst), grm::SUCCESS);
 
     EXPECT_EQ(dst.contig, "chrX");
-    EXPECT_EQ(dst.len, 1);
+    EXPECT_EQ(dst.len, static_cast<uint64_t>(1));
     ASSERT_NE(dst.pos, nullptr);
-    EXPECT_EQ(dst.pos[0], 42);
+    EXPECT_EQ(dst.pos[0], static_cast<uint64_t>(42));
 }
 
 
