@@ -215,9 +215,9 @@ TEST(TestCoords, ReadOverwritesExisting) {
     ASSERT_EQ(grm::read(&fio, &dst), grm::SUCCESS);
 
     EXPECT_EQ(dst.contig, "chr9");
-    EXPECT_EQ(dst.len, 2);
-    EXPECT_EQ(dst.pos[0], 10);
-    EXPECT_EQ(dst.pos[1], 20);
+    EXPECT_EQ(dst.len, static_cast<uint64_t>(2));
+    EXPECT_EQ(dst.pos[0], static_cast<uint64_t>(10));
+    EXPECT_EQ(dst.pos[1], static_cast<uint64_t>(20));
 }
 
 
@@ -228,7 +228,7 @@ TEST(TestCoords, ReadOverwritesExisting) {
 TEST(TestSamples, DefaultConstructor) {
     grm::Samples samps {};
 
-    EXPECT_EQ(samps.len, 0);
+    EXPECT_EQ(samps.len, static_cast<uint64_t>(0));
     EXPECT_EQ(samps.names, nullptr);
 }
 
@@ -245,7 +245,7 @@ TEST(TestSamples, ConstructorValidInput) {
 TEST(TestSamples, ConstructorZero) {
     grm::Samples samps { 0 };
 
-    EXPECT_EQ(samps.len, 0);
+    EXPECT_EQ(samps.len, static_cast<uint64_t>(0));
     EXPECT_EQ(samps.names, nullptr);
 }
 
@@ -258,13 +258,13 @@ TEST(TestSamples, MoveConstructor) {
 
     grm::Samples dst { std::move(src) };
 
-    EXPECT_EQ(dst.len, 3);
+    EXPECT_EQ(dst.len, static_cast<uint64_t>(3));
     ASSERT_NE(dst.names, nullptr);
     EXPECT_EQ(dst.names[0], "sample_A");
     EXPECT_EQ(dst.names[1], "sample_B");
     EXPECT_EQ(dst.names[2], "sample_C");
 
-    EXPECT_EQ(src.len, 0);
+    EXPECT_EQ(src.len, static_cast<uint64_t>(0));
     EXPECT_EQ(src.names, nullptr);
 }
 
@@ -277,12 +277,12 @@ TEST(TestSamples, MoveAssignment) {
     grm::Samples dst {};
     dst = std::move(src);
 
-    EXPECT_EQ(dst.len, 2);
+    EXPECT_EQ(dst.len, static_cast<uint64_t>(2));
     ASSERT_NE(dst.names, nullptr);
     EXPECT_EQ(dst.names[0], "id_1");
     EXPECT_EQ(dst.names[1], "id_2");
 
-    EXPECT_EQ(src.len, 0);
+    EXPECT_EQ(src.len, static_cast<uint64_t>(0));
     EXPECT_EQ(src.names, nullptr);
 }
 
@@ -305,7 +305,7 @@ TEST(TestSamples, WriteReadRoundTrip) {
     status = grm::read(&fio, &dst);
     ASSERT_EQ(status, grm::SUCCESS);
 
-    EXPECT_EQ(dst.len, 3);
+    EXPECT_EQ(dst.len, static_cast<uint64_t>(3));
     ASSERT_NE(dst.names, nullptr);
     EXPECT_EQ(dst.names[0], "alpha");
     EXPECT_EQ(dst.names[1], "beta");
@@ -328,7 +328,7 @@ TEST(TestSamples, WriteReadVaryingLengthNames) {
     grm::Samples dst {};
     ASSERT_EQ(grm::read(&fio, &dst), grm::SUCCESS);
 
-    EXPECT_EQ(dst.len, 3);
+    EXPECT_EQ(dst.len, static_cast<uint64_t>(3));
     ASSERT_NE(dst.names, nullptr);
     EXPECT_EQ(dst.names[0], "a");
     EXPECT_EQ(dst.names[1], "longer_sample_name");
@@ -371,7 +371,7 @@ TEST(TestSamples, WriteReadSingleSample) {
     grm::Samples dst {};
     ASSERT_EQ(grm::read(&fio, &dst), grm::SUCCESS);
 
-    EXPECT_EQ(dst.len, 1);
+    EXPECT_EQ(dst.len, static_cast<uint64_t>(1));
     ASSERT_NE(dst.names, nullptr);
     EXPECT_EQ(dst.names[0], "only_sample");
 }
@@ -426,7 +426,7 @@ TEST(TestSamples, ReadOverwritesExisting) {
 
     ASSERT_EQ(grm::read(&fio, &dst), grm::SUCCESS);
 
-    EXPECT_EQ(dst.len, 2);
+    EXPECT_EQ(dst.len, static_cast<uint64_t>(2));
     ASSERT_NE(dst.names, nullptr);
     EXPECT_EQ(dst.names[0], "new_a");
     EXPECT_EQ(dst.names[1], "new_b");
@@ -528,13 +528,13 @@ TEST(TestHdr, WriteReadRoundTrip) {
 
     ASSERT_NE(dst.coords, nullptr);
     EXPECT_EQ(dst.coords->contig, "chr5");
-    EXPECT_EQ(dst.coords->len, 3);
-    EXPECT_EQ(dst.coords->pos[0], 100);
-    EXPECT_EQ(dst.coords->pos[1], 200);
-    EXPECT_EQ(dst.coords->pos[2], 300);
+    EXPECT_EQ(dst.coords->len, static_cast<uint64_t>(3));
+    EXPECT_EQ(dst.coords->pos[0], static_cast<uint64_t>(100));
+    EXPECT_EQ(dst.coords->pos[1], static_cast<uint64_t>(200));
+    EXPECT_EQ(dst.coords->pos[2], static_cast<uint64_t>(300));
 
     ASSERT_NE(dst.samples, nullptr);
-    EXPECT_EQ(dst.samples->len, 2);
+    EXPECT_EQ(dst.samples->len, static_cast<uint64_t>(2));
     EXPECT_EQ(dst.samples->names[0], "samp1");
     EXPECT_EQ(dst.samples->names[1], "samp2");
 }
@@ -639,18 +639,18 @@ TEST(TestHdr, ReadNullFid) {
 TEST(TestGrm, DefaultConstructor) {
     grm::Grm g {};
 
-    EXPECT_EQ(g.n_samples, 0);
+    EXPECT_EQ(g.n_samples, static_cast<uint64_t>(0));
     EXPECT_EQ(g.data, nullptr);
-    EXPECT_EQ(g.size(), 0);
+    EXPECT_EQ(g.size(), static_cast<uint64_t>(0));
 }
 
 
 TEST(TestGrm, ConstructorValidInput) {
     grm::Grm g { 4 };
 
-    EXPECT_EQ(g.n_samples, 4);
+    EXPECT_EQ(g.n_samples, static_cast<uint64_t>(4));
     EXPECT_NE(g.data, nullptr);
-    EXPECT_EQ(g.size(), 4 * 5 / 2);  // n*(n+1)/2 = 10
+    EXPECT_EQ(g.size(), static_cast<uint64_t>(4 * 5 / 2));  // n*(n+1)/2 = 10
 
     // data should be zero-initialized
     for (uint64_t i = 0; i < g.size(); i++)
@@ -661,19 +661,19 @@ TEST(TestGrm, ConstructorValidInput) {
 TEST(TestGrm, ConstructorZero) {
     grm::Grm g { 0 };
 
-    EXPECT_EQ(g.n_samples, 0);
+    EXPECT_EQ(g.n_samples, static_cast<uint64_t>(0));
     EXPECT_EQ(g.data, nullptr);
-    EXPECT_EQ(g.size(), 0);
+    EXPECT_EQ(g.size(), static_cast<uint64_t>(0));
 }
 
 
 TEST(TestGrm, Size) {
-    EXPECT_EQ(grm::Grm(0).size(), 0);
-    EXPECT_EQ(grm::Grm(1).size(), 1);
-    EXPECT_EQ(grm::Grm(2).size(), 3);
-    EXPECT_EQ(grm::Grm(3).size(), 6);
-    EXPECT_EQ(grm::Grm(4).size(), 10);
-    EXPECT_EQ(grm::Grm(5).size(), 15);
+    EXPECT_EQ(grm::Grm(0).size(), static_cast<uint64_t>(0));
+    EXPECT_EQ(grm::Grm(1).size(), static_cast<uint64_t>(1));
+    EXPECT_EQ(grm::Grm(2).size(), static_cast<uint64_t>(3));
+    EXPECT_EQ(grm::Grm(3).size(), static_cast<uint64_t>(6));
+    EXPECT_EQ(grm::Grm(4).size(), static_cast<uint64_t>(10));
+    EXPECT_EQ(grm::Grm(5).size(), static_cast<uint64_t>(15));
 }
 
 
@@ -684,32 +684,32 @@ TEST(TestGrm, MidxToArr) {
 
     // Upper triangle and diagonal
     EXPECT_EQ(g.midx_to_arr(0, 0, &idx), grm::SUCCESS);
-    EXPECT_EQ(idx, 0);
+    EXPECT_EQ(idx, static_cast<uint64_t>(0));
 
     EXPECT_EQ(g.midx_to_arr(0, 1, &idx), grm::SUCCESS);
-    EXPECT_EQ(idx, 1);
+    EXPECT_EQ(idx, static_cast<uint64_t>(1));
 
     EXPECT_EQ(g.midx_to_arr(0, 2, &idx), grm::SUCCESS);
-    EXPECT_EQ(idx, 2);
+    EXPECT_EQ(idx, static_cast<uint64_t>(2));
 
     EXPECT_EQ(g.midx_to_arr(1, 1, &idx), grm::SUCCESS);
-    EXPECT_EQ(idx, 3);
+    EXPECT_EQ(idx, static_cast<uint64_t>(3));
 
     EXPECT_EQ(g.midx_to_arr(1, 2, &idx), grm::SUCCESS);
-    EXPECT_EQ(idx, 4);
+    EXPECT_EQ(idx, static_cast<uint64_t>(4));
 
     EXPECT_EQ(g.midx_to_arr(2, 2, &idx), grm::SUCCESS);
-    EXPECT_EQ(idx, 5);
+    EXPECT_EQ(idx, static_cast<uint64_t>(5));
 
     // Lower triangle should map to same idx by symmetry
     EXPECT_EQ(g.midx_to_arr(1, 0, &idx), grm::SUCCESS);
-    EXPECT_EQ(idx, 1);  // same as (0,1)
+    EXPECT_EQ(idx, static_cast<uint64_t>(1));  // same as (0,1)
 
     EXPECT_EQ(g.midx_to_arr(2, 0, &idx), grm::SUCCESS);
-    EXPECT_EQ(idx, 2);  // same as (0,2)
+    EXPECT_EQ(idx, static_cast<uint64_t>(2));  // same as (0,2)
 
     EXPECT_EQ(g.midx_to_arr(2, 1, &idx), grm::SUCCESS);
-    EXPECT_EQ(idx, 4);  // same as (1,2)
+    EXPECT_EQ(idx, static_cast<uint64_t>(4));  // same as (1,2)
 }
 
 
@@ -799,12 +799,12 @@ TEST(TestGrm, MoveConstructor) {
 
     grm::Grm dst { std::move(src) };
 
-    EXPECT_EQ(dst.n_samples, 3);
+    EXPECT_EQ(dst.n_samples, static_cast<uint64_t>(3));
     EXPECT_NE(dst.data, nullptr);
     EXPECT_FLOAT_EQ(dst(0, 0), 1.0f);
     EXPECT_FLOAT_EQ(dst(1, 2), 5.0f);
 
-    EXPECT_EQ(src.n_samples, 0);
+    EXPECT_EQ(src.n_samples, static_cast<uint64_t>(0));
     EXPECT_EQ(src.data, nullptr);
 }
 
@@ -818,12 +818,12 @@ TEST(TestGrm, MoveAssignment) {
     grm::Grm dst {};
     dst = std::move(src);
 
-    EXPECT_EQ(dst.n_samples, 2);
+    EXPECT_EQ(dst.n_samples, static_cast<uint64_t>(2));
     EXPECT_FLOAT_EQ(dst(0, 0), 1.0f);
     EXPECT_FLOAT_EQ(dst(0, 1), 2.0f);
     EXPECT_FLOAT_EQ(dst(1, 1), 3.0f);
 
-    EXPECT_EQ(src.n_samples, 0);
+    EXPECT_EQ(src.n_samples, static_cast<uint64_t>(0));
     EXPECT_EQ(src.data, nullptr);
 }
 
@@ -831,8 +831,8 @@ TEST(TestGrm, MoveAssignment) {
 TEST(TestGrm, SingleSampleMatrix) {
     grm::Grm g { 1 };
 
-    EXPECT_EQ(g.n_samples, 1);
-    EXPECT_EQ(g.size(), 1);
+    EXPECT_EQ(g.n_samples, static_cast<uint64_t>(1));
+    EXPECT_EQ(g.size(), static_cast<uint64_t>(1));
     EXPECT_NE(g.data, nullptr);
 
     g(0, 0) = 2.5f;
@@ -906,7 +906,7 @@ TEST(TestGrm, MoveAssignmentReplacesExisting) {
 
     dst = std::move(src);
 
-    EXPECT_EQ(dst.n_samples, 4);
+    EXPECT_EQ(dst.n_samples, static_cast<uint64_t>(4));
     EXPECT_FLOAT_EQ(dst(0, 0), 1.0f);
     EXPECT_FLOAT_EQ(dst(3, 3), 42.0f);
 }
@@ -920,12 +920,12 @@ TEST(TestMatrixMacro, ManualValidation) {
     // Validate MATRIX_IDX_TO_ARRAY against the worked example
     // in grm.h for a 3x3 matrix
     uint64_t n = 3;
-    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(0, 0, n), 0);
-    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(0, 1, n), 1);
-    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(0, 2, n), 2);
-    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(1, 1, n), 3);
-    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(1, 2, n), 4);
-    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(2, 2, n), 5);
+    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(0, 0, n), static_cast<uint64_t>(0));
+    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(0, 1, n), static_cast<uint64_t>(1));
+    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(0, 2, n), static_cast<uint64_t>(2));
+    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(1, 1, n), static_cast<uint64_t>(3));
+    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(1, 2, n), static_cast<uint64_t>(4));
+    EXPECT_EQ(MATRIX_IDX_TO_ARRAY(2, 2, n), static_cast<uint64_t>(5));
 }
 
 
@@ -949,8 +949,8 @@ static void build_test_data(grm::Hdr* hdr, grm::Grm* g) {
 
     char contig[] = "chr1";
     *hdr->coords = grm::Coordinates { contig, 2 };
-    hdr->coords->pos[0] = 50;
-    hdr->coords->pos[1] = 150;
+    hdr->coords->pos[0] = static_cast<uint64_t>(50);
+    hdr->coords->pos[1] = static_cast<uint64_t>(150);
 
     *hdr->samples = grm::Samples { 3 };
     hdr->samples->names[0] = "s1";
@@ -986,14 +986,14 @@ TEST(TestGrmFile, WriteReadRoundTrip) {
     // verify header
     EXPECT_EQ(hdr_r.grm_type, grm::EHC);
     EXPECT_EQ(hdr_r.coords->contig, "chr1");
-    EXPECT_EQ(hdr_r.coords->len, 2);
-    EXPECT_EQ(hdr_r.samples->len, 3);
+    EXPECT_EQ(hdr_r.coords->len, static_cast<uint64_t>(2));
+    EXPECT_EQ(hdr_r.samples->len, static_cast<uint64_t>(3));
     EXPECT_EQ(hdr_r.samples->names[0], "s1");
     EXPECT_EQ(hdr_r.samples->names[1], "s2");
     EXPECT_EQ(hdr_r.samples->names[2], "s3");
 
     // verify grm data
-    EXPECT_EQ(grm_r.n_samples, 3);
+    EXPECT_EQ(grm_r.n_samples, static_cast<uint64_t>(3));
     float val = 0.0f;
     grm_r.get(0, 0, &val); EXPECT_FLOAT_EQ(val, 1.0f);
     grm_r.get(0, 1, &val); EXPECT_FLOAT_EQ(val, 0.5f);
@@ -1092,7 +1092,7 @@ TEST(TestGrmFile, MagicNumberWrittenFirst) {
 
     uint32_t magic = 0;
     size_t nread = fread(&magic, sizeof(magic), 1, fio.fid);
-    ASSERT_EQ(nread, 1);
+    ASSERT_EQ(nread, static_cast<size_t>(1));
     EXPECT_EQ(magic, grm::FILE_TYPE_SPEC);
 }
 
@@ -1123,10 +1123,10 @@ TEST(TestGrmFile, WriteReadSingleSample) {
     ASSERT_EQ(grm::read(&fio, &hdr_r, &g_r), grm::SUCCESS);
 
     EXPECT_EQ(hdr_r.grm_type, grm::DS);
-    EXPECT_EQ(hdr_r.samples->len, 1);
+    EXPECT_EQ(hdr_r.samples->len, static_cast<uint64_t>(1));
     EXPECT_EQ(hdr_r.samples->names[0], "lone_sample");
 
-    EXPECT_EQ(g_r.n_samples, 1);
+    EXPECT_EQ(g_r.n_samples, static_cast<uint64_t>(1));
     float val = 0.0f;
     g_r.get(0, 0, &val);
     EXPECT_FLOAT_EQ(val, 0.75f);
