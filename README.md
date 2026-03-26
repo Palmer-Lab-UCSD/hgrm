@@ -1,6 +1,6 @@
 # `hwas` a tool for haplotype wide association analyses
 
- ðï¸  **Under construction** ðï¸
+**Under construction**
 
 
 ## Table of Contents
