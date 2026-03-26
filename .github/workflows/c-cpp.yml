@@ -1,0 +1,28 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.config.os }}
+    name: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, ubuntu-latest-arm, macos-15 ]
+          
+    steps:
+    - uses: actions/checkout@v4
+#    - name: configure
+#      run: ./configure
+    - name: make
+      run: make
+    - name: make check
+      run: make check
+#    - name: make distcheck
+#      run: make distcheck
+

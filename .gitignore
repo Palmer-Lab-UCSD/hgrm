@@ -1,6 +1,10 @@
 build/
+tmp_*
 *.swp
 *.swo
 *~
 *.DS_Store
 *.vscode/
+scratch/
+data/
+tags
