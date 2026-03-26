@@ -1,6 +1,6 @@
-# `grm` a tool for computing genetic relationship matrices
+# `hwas` a tool for haplotype wide association analyses
 
- 🏗️  **Under construction** 🏗️
+ ðï¸  **Under construction** ðï¸
 
 
 ## Table of Contents

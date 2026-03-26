@@ -11,6 +11,7 @@
 
 #include <bcfio.h>
 
+
 ///////////////////////////////////////////////////////////////////
 // BcfHeader
 ///////////////////////////////////////////////////////////////////
@@ -19,8 +20,8 @@ int bcfio::BcfHeader::decode_hts_idinfo_(const char *name,
         const int bcf_dt_type, 
         bcfio::BcfHdrAttr *ptr) const {
 
-    // BCF_DT_ID is the C macro for the ID dictionary index defined by htslib
-    // see htslib/vcf.h line 86
+    // BCF_DT_ID is the C macro for the ID dictionary index defined 
+    // by htslib see htslib/vcf.h line 86
     int idx = htslib::bcf_hdr_id2int(hdr_, BCF_DT_ID, name);
 
     if (idx < 0)
@@ -90,9 +91,10 @@ bcfio::BcfFloatRecord::~BcfFloatRecord() {
 
 std::optional<float> bcfio::BcfFloatRecord::get(const size_t row_idx,
         const size_t col_idx) const {
-    if ((row_idx * col_idx + col_idx) >= size()) return std::nullopt;
+    size_t idx = row_idx * col_num_ + col_idx;
+    if (idx >= size()) return std::nullopt;
 
-    return *(dst_ + row_idx * col_idx + col_idx);
+    return *(dst_ + idx);
 }
 
 int bcfio::BcfFloatRecord::load_data(bcfio::BcfHeader *hdr, const char *id) {
@@ -115,7 +117,7 @@ int bcfio::BcfFloatRecord::load_data(bcfio::BcfHeader *hdr, const char *id) {
         return k;
     }
 
-    col_num_ = static_cast<size_t>(k);
+    col_num_ = static_cast<uint64_t>(k);
     row_num_ = hdr->n_samples();
 
     return 0;
@@ -126,16 +128,22 @@ int bcfio::BcfFloatRecord::load_data(bcfio::BcfHeader *hdr, const char *id) {
 // BcfRead
 ///////////////////////////////////////////////////////////////////
 ///
-bcfio::ReadBcf::ReadBcf(const char *bcfname)
-    : fname_(bcfname),
-    fid_(htslib::hts_open(bcfname, "r")),
-    hdr_(fid_) {};
 
+bcfio::ReadBcf::ReadBcf()
+    : fname_(""), fid_(nullptr), hdr_() {};
+ 
+bcfio::ReadBcf::ReadBcf(const char *filename, htslib::htsFile* fid)
+    : fname_(filename),
+    fid_(fid),
+    hdr_(fid_) {};
 
 bcfio::ReadBcf::~ReadBcf() {
     if (fid_) htslib::hts_close(fid_);
 }
 
+bool bcfio::ReadBcf::isopen() const {
+    return fid_ != nullptr;
+}
 
 // TODO: subset samples by those in sample_fname file
 int bcfio::ReadBcf::set_samples(const char *sample_fname) {
@@ -150,7 +158,6 @@ int bcfio::ReadBcf::set_samples(const char *sample_fname) {
     return hdr_.subset_samples(sample_fname);
 };
 
-
 // title: load next record
 int bcfio::ReadBcf::next_record(bcfio::BcfFloatRecord *ptr, const char *id) {
     int status = htslib::bcf_read(fid_, hdr_.hts_hdr(), ptr->cur_rec());
@@ -163,3 +170,12 @@ int bcfio::ReadBcf::next_record(bcfio::BcfFloatRecord *ptr, const char *id) {
 
     return ptr->load_data(&hdr_, id);
 }
+
+bcfio::ReadBcf bcfio::open(const char* filename, const char* mode) {
+    htslib::htsFile* fid = htslib::hts_open(filename, mode);
+    if (!fid)
+        return bcfio::ReadBcf();
+
+    return bcfio::ReadBcf(filename, fid);
+}
+
