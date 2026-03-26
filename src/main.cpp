@@ -1,207 +1,218 @@
 // Compute the genomic relationship matrix using haplotypes
 //
-// By: Robert Vogel
-// Affiliation: Palmer Lab at UCSD
-// Date: 2025-01-09
+// Palmer Lab at UCSD
 //
-// Input argument
-//    filename: vcf with haplotpye
-//
-// This program performs a single-pass computation of the 
-// haplotype based genomic relationship matrix.  The approach
-// is well defined for the covariance, however under my definition
-// of the haplotype based covariance I had to derive the recursion
-// relations myself.
-//
-//
-//
-// Acknowledgment
-//
-// Code design and original version completed by Robert Vogel,
-// reviewed by Claude Sonnet, the AI assistant from Anthropic
-// (Jan 2025), with minor recommendations incorporated.
+// This program performs a single-pass computation of the genetic relationship
+// matrix (GRM, GR matrix).  GR matrices may be constructed using alt allele
+// counts, expected alt allele counts, expected haplotype counts, or a
+// combination of both expected alt allele and haplotype counts.  
 //
 #include <argparse.h>
-#include <cstdio>
-// #include <chrono>
-#include <cstdlib>
 #include <optional>
 #include <string>
 
+#include <logger.h>
+#include <calc.h>
+#include <grm.h>
 
-size_t MARKER_PRINT_INTERVAL { 1000 };
-char HELP_LONG_FLAG[] { "--help" };
-char HELP_SHORT_FLAG[] { "-h" };
+
+#define FAILED_CALC -1
+#define SUCCESS_CALC 0
+
+
+const size_t STR_BUF_LEN { 500 };
+char STR_BUF[STR_BUF_LEN];
+
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2 && argc != 4) {
-        fprintf(stderr, "Incorrect input, see --help for correct usage.\n");
-        exit(EXIT_FAILURE);
-    }
+    // if (argc != 2 && argc != 4) {
+    //     fprintf(stderr, "Incorrect input, see --help for correct usage.\n");
+    //     exit(EXIT_FAILURE);
+    // }
 
     argparse::ArgParser parser {
-        "hgrm: Haplotype Genetic Relationship Matrix",
-        "This program computes the haplotype genetic relationship matrix"
-        "from the expected haplotype counts per locus per sample and stored"
-        "as a text file in the variant call format (VCF)."
+        "grm: Genetic Relationship Matrix",
+        "This program provides tools for computing the genetic relationship"
+        " matrix (GRM) and the leave-one-chromosome-out (LOCO) matrices for"
+        " linear mixed effect based association studies.  The GRM may be"
+        " computed using called genotypes, expected alternative allele counts,"
+        " expected haplotype counts, or both expected alternative allele"
+        " and haplotype counts.  By default the expected alternative allele"
+        " counts are used."
     };
 
-    parser.add_arg("--sample_names",
+    argparse::CmdDef *contig_cmd = parser.add_cmd("contig");
+
+    contig_cmd->add_arg("-o", 
+            argparse::ArgType::STRING,
+            "the path and filename that the resulting haplotype genetic"
+            " relationship matrix is printed.");
+
+    contig_cmd->add_arg("--sample_names",
             argparse::ArgType::STRING,
             "The path and name of the file containing sample names to be"
             " included in computing the relationship matrix.  The file must"
             " include a single sample filename, and if necessary file system"
             " path, per line.");
-    parser.add_arg("-o", 
-            argparse::ArgType::STRING,
-            "the path and filename that the resulting haplotype genetic"
-            "relationship matrix is printed.");
-    parser.add_arg("vcf",
+
+    contig_cmd->add_arg("--gt",
+            argparse::ArgType::BOOLEAN,
+            "Use sample genotypes to compute the relationship matrix");
+
+    contig_cmd->add_arg("--ehc",
+            argparse::ArgType::BOOLEAN,
+            "Use sample expected haplotype count to compute the the genetic"
+            " relationship matrix.");
+
+    contig_cmd->add_arg("-b",
+            argparse::ArgType::BOOLEAN,
+            "Use both the expected alternative allele and haplotype counts to"
+            " compute the genetic relationship matrix");
+
+    contig_cmd->add_arg("bcf",
             argparse::ArgType::STRING, 
-            "the path and filename of the vcf in which the hgrm is computed.");
+            "The path and filename of the genetic data to compute the GRM. The"
+            " data may be in any of the htslib supported formats, i.e. vcf,"
+            " vcf.gz, or bcf.");
 
-    if (parser.parse_args(argc, argv) != argparse::ArgStatus::SUCCESS) {
-        fprintf(stderr, "Error: couldn't parse command line args, exiting\n");
+
+    argparse::CmdDef *loco_cmd = parser.add_cmd("loco");
+    loco_cmd->add_arg("filename",
+            argparse::ArgType::STRING,
+            "Name, and path, of file that stores the name and paths of matrix"
+            " files used to compute leave-one-chromosome-out (LOCO) relationship"
+            " matrix.");
+
+
+
+    Logger log {};
+    int status = FAILED_CALC;
+    argparse::ArgStatus arg_status = parser.parse_args(argc, argv);
+
+    // PARSE ARGUMENTS
+    if (arg_status == argparse::ArgStatus::HELP)
+        return 0;
+
+    if (arg_status != argparse::ArgStatus::SUCCESS) {
+        log.error("Error: couldn't parse command line args, exiting\n");
         exit(EXIT_FAILURE);
     }
 
-    std::optional<std::string> tmp {};
-    if((tmp = parser.get<std::string>("vcf")) == std::nullopt) {
-        fprintf(stderr, "Error retrieving vcf name");
-        exit(EXIT_FAILURE);
-    }
-    std::string vcf_fname { tmp.value() };
+    // PARSE ARGS FOR RESPECTIVE SUBPROGRAMS AND RUN
+    //
+    // Compute the GRM for the specified contig
+    if (parser.is_sub_cmd("contig")) {
 
-    if ((tmp = parser.get<std::string>("o")) == std::nullopt) {
-        fprintf(stderr, "Error retrieving output name");
-        exit(EXIT_FAILURE);
-    }
-    std::string out_fname { tmp.value() };
+        std::optional<std::string> tmp_str {};
+        if((tmp_str = parser.get<std::string>("bcf")) == std::nullopt) {
+            log.error("Error retrieving vcf name");
+            exit(EXIT_FAILURE);
+        }
+        std::string bcf_fname { tmp_str.value() };
 
-    if (out_fname.size() == 0)
-        out_fname = vcf_fname + ".mat";
+        if ((tmp_str = parser.get<std::string>("o")) == std::nullopt) {
+            log.error("Error retrieving output name");
+            exit(EXIT_FAILURE);
+        }
+        std::string out_fname { tmp_str.value() };
 
-    std::string samp_fname {};
-    if ((tmp = parser.get<std::string>("sample_names")) == std::nullopt) {
-        fprintf(stderr, "Error retrieving sample_names file.\n");
-        exit(EXIT_FAILURE);
-    }
-    samp_fname = tmp.value();
+        if (out_fname.size() == 0)
+            out_fname = bcf_fname + ".mat";
+
+        if ((tmp_str = parser.get<std::string>("sample_names")) == std::nullopt) {
+            log.error("Error retrieving sample_names file.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        std::string samp_fname { tmp_str.value() };
+
+        
+        std::optional<bool> tmp_bool {};
+        if ((tmp_bool = parser.get<bool>("gt")) == std::nullopt) {
+            log.error("Error retrieving relationship matrix type.\n");
+            exit(EXIT_FAILURE);
+        }
+        bool use_gt { tmp_bool.value() };
+
+        if ((tmp_bool = parser.get<bool>("ehc")) == std::nullopt) {
+            log.error("Error retrieving relationship matrix type.\n");
+            exit(EXIT_FAILURE);
+        }
+        bool use_ehc { tmp_bool.value() };
+
+        if ((tmp_bool = parser.get<bool>("b")) == std::nullopt) {
+            log.error("Error retrieving relationship matrix type.\n");
+            exit(EXIT_FAILURE);
+        }
+        bool use_both { tmp_bool.value() };
 
 
-    fprintf(stdout, "BCF/VCF file name: %s\n", vcf_fname.c_str());
-    if (samp_fname.size() == 0)
-        fprintf(stdout, "Sample file: None, use all samples\n");
-    else
-        fprintf(stdout, "Sample file: %s\n", samp_fname.c_str());
-    fprintf(stdout, "Output matrix file: %s\n", out_fname.c_str());
-
-    // const std::chrono::time_point timer;
-    // { std::chrono::steady_clock::now() };
+        if ((use_gt && use_both) || (use_gt && use_ehc) || (use_both && use_ehc)) {
+            log.error("user must specify either use_gt, use_both, use_ehc,"
+                    " or omit both options to compute the haplotype based"
+                    " relationship matrix.");
+            exit(EXIT_FAILURE);
+        }
     
-//    HaplotypeVcfParser vcf_data { filename_input, 100000 };
+        log.info("BCF/VCF file name: %s", bcf_fname.c_str());
 
-    fprintf(stdout, "Allocating memory\n");
-    // instantiate matrices to hold calculations
-//     Matrix covariance { vcf_data.n_samples(), vcf_data.n_samples() };
 
-//
-//    // open VCF file and parse meta data and header
-//    HaplotypeVcfParser vcf_data { filename_input, 100000 };
-//
-//
+        bcfio::ReadBcf bfid { bcf_fname.c_str() };
 
-//    // instantiate record object
-//    HaplotypeDataRecord record { vcf_data.n_samples(), vcf_data.k_founders() };
-//
-//    // analyze each line, i.e. position, in the VCF
-//    size_t m_markers { 1 };
-//
-//    double sum { 0 };
-//    const double* rowi { nullptr };
-//    const double* rowj { nullptr };
-//    double* rowi_cov { nullptr };
-//    const size_t k_founders { vcf_data.k_founders() };
-//    const size_t n_samples { vcf_data.n_samples() };
-//
-//    std::chrono::steady_clock::duration delta_t
-//        { std::chrono::steady_clock::now() - timer };
-//
-//    fprintf(stdout, "Computing matrix, elapsed time %lld second(s)\n",
-//            std::chrono::duration_cast<std::chrono::seconds>(delta_t).count());
-//
-//    while(vcf_data.load_record(record)) {
-//
-//        // for each founder, compute first and second moments
-//        for (size_t i = 0; i < n_samples; i++) {
-//
-//            rowi = &record(i, 0);
-//            rowi_cov = &covariance(i, 0);
-//
-//            for (size_t j = i; j < n_samples; j++) {
-//
-//                rowj = &record(j,0);
-//                sum = 0;
-//
-//                for (int k = 0; k < k_founders; k++)
-//                    sum += rowi[k] * rowj[k];
-//
-//                rowi_cov[j] += sum;
-//            }
-//        }
-//
-//        if (m_markers % MARKER_PRINT_INTERVAL == 0) {
-//            delta_t = std::chrono::steady_clock::now() - timer;
-//
-//            fprintf(stdout, "Completed %zu marker loci, elapsed time %lld second(s)\n",
-//                    m_markers,
-//                    std::chrono::duration_cast<std::chrono::seconds>(delta_t).count());
-//        }
-//
-//        m_markers++;
-//
-//    }
-//
-//
-//    FILE* fout = stdout;
-//
-//    if (argc == 3 && filename_output != nullptr) {
-//
-//        if ((fout = fopen(filename_output, "w")) == nullptr)
-//            throw std::runtime_error("Error in opening file for writing.");
-//
-//        delta_t = std::chrono::steady_clock::now() - timer;
-//        fprintf(stdout, "Writing results to file %s, elapsed time %lld second(s)\n",
-//                filename_output,
-//                std::chrono::duration_cast<std::chrono::seconds>(delta_t).count());
-//
-//    } else if (argc == 3 && filename_output == nullptr)
-//        throw std::runtime_error("Output filename is not specified");
-//
-//
-//    size_t i { 0 };
-//    size_t j { 0 };
-//    for (i = 0; i < n_samples; i++) {
-//
-//        for (j = 0; j < n_samples-1; j++) {
-//            if (j < i)
-//                fprintf(fout, "%0.5f,", covariance(j,i));
-//            else
-//                fprintf(fout, "%0.5f,", covariance(i,j));
-//
-//        }
-//
-//        fprintf(fout,"%0.5f\n", covariance(i, j));
-//    }
-//
-//    fclose(fout);
-//
-//
-//    delta_t = std::chrono::steady_clock::now() - timer;
-//
-//    fprintf(stdout, "Done, elapsed time %lld second(s)\n",
-//            std::chrono::duration_cast<std::chrono::seconds>(delta_t).count());
-//
-    return 0;
+        int bstatus = 0;
+        if (samp_fname.size() == 0)
+            log.info("Sample file: None, use all samples");
+        else if ((bstatus = bfid.set_samples(samp_fname.c_str())) == 0)
+            log.info("Sample file: %s", samp_fname.c_str());
+        else if (bstatus < 0) {
+            log.error("Subsetting by sample file, %s, resulted in error", 
+                    samp_fname.c_str());
+            exit(EXIT_FAILURE);
+        } else if (bstatus > 0) {
+            log.error("One or more samples specified in sample file, %s,"
+                    " do not %s", 
+                    samp_fname.c_str(), 
+                    bcf_fname.c_str());
+            exit(EXIT_FAILURE);
+        }
+
+        log.info("Output matrix file: %s", out_fname.c_str());
+
+        grm::Grm grmatrix { bfid.n_samples() };
+
+        if (use_gt) {
+            log.info("Relationship matrix: genotype");
+            status = compute_genotype_matrix();
+        } else if (use_ehc) {
+            log.info("Relationship matrix: expected haplotype count");
+            status = compute_ehc_matrix(&log, &bfid, &grmatrix);
+        } else if (use_both) {
+            log.info("Relationship matrix: expected alt allele and haplotype"
+                    " counts");
+            status = compute_eac_and_ehc_matrix();
+        } else {
+            log.info("Relationship matrix: expected alternative allele counts");
+            status = compute_eac_matrix();
+        }
+
+        if (status == FAILED_CALC)
+            log.error("Computation failed");
+
+        log.info("Writing to file");
+
+        grmatrix.write(out_fname);
+    } else if (parser.is_sub_cmd("loco")) {
+        // Compute the leave-one-chromosome-out matrix given a set of 
+        // matricies.
+        //
+        printf("loco selected\n");
+    } else if (parser.is_sub_cmd("assoc")) {
+        printf("association statistics selected\n");
+    }
+
+
+
+
+    return status;
 }

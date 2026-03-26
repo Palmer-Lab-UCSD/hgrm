@@ -17,19 +17,22 @@
 
 ifneq ($(shell which clang++),)
 CXX					= clang++
+CXXFLAGS			= -pedantic # -Wextra
 else ifneq ($(shell which g++),)
 CXX					= g++
+CXXFLAGS			= -Wpedantic -Wextra
 else
 $(error "Couldn't establish either clang or gcc compiler availability")
 endif
 
 
-CXXFLAGS			= -g -std=c++17 -Wall -Werror
+CXXFLAGS			+= -g -std=c++17 -Wall -Werror
 
 ifndef VIM
 CXXFLAGS += -fdiagnostics-color=always
 endif
 
+# Recall that -c flag prevents the compiler linking object files
 OBJ_OUTPUT_OPTIONS 	= -c -MMD -MP -o $@
 AR 					= ar
 AR_FLAGS 			= crs
@@ -45,26 +48,29 @@ SRC_DIR = src
 HEADER_DIR = include
 BUILD_DIR = build
 
-CXXLD += $(PWD)/include
-CXXLD += $(LOCAL_LD)
-
+CXXLD := $(PWD)/include $(LOCAL_LD) $(CXXLD)
 CXXLDFLAGS = $(addprefix -I, $(CXXLD))
 
 CXXLIB += $(LOCAL_LIB)
 CXXLIBFLAGS = $(addprefix -L, $(CXXLIB))
 
-APP_FILES = matrix.cpp bcfio.cpp
-APP_SRC = $(addprefix $(SRC_DIR)/, $(APP_FILES))
-APP_OBJS = $(addprefix $(BUILD_DIR)/, $(APP_FILES:.cpp=.o))
+# APPLICATION FILES
+# APP_FILES = matrix.cpp bcfio.cpp
+APP_SRC = $(filter-out $(SRC_DIR)/main.cpp, $(wildcard $(SRC_DIR)/*.cpp))
+#APP_SRC = $(addprefix $(SRC_DIR)/, $(APP_FILES))
+APP_OBJS = $(subst $(SRC_DIR), $(BUILD_DIR), $(APP_SRC:.cpp=.o))
 APP_DEPS = $(APP_OBJS:.o=.d)
 
-
+# TESTS
 TEST_DIR = tests
 TEST_SRC = $(wildcard $(TEST_DIR)/test_*.cpp)
 TEST_OBJS = $(subst $(TEST_DIR), $(BUILD_DIR), $(TEST_SRC:.cpp=.o))
 TEST_DEPS = $(TEST_OBJS:.o=.d)
+
+
 TEST_DATA_SRC = $(wildcard $(TEST_DIR)/geno_test_data.*)
 TEST_DATA_DST = $(subst $(TEST_DIR), $(BUILD_DIR), $(TEST_DATA_SRC))
+
 TEST_TARGET_PRG = $(BUILD_DIR)/runtests
 
 
@@ -72,7 +78,7 @@ TEST_TARGET_PRG = $(BUILD_DIR)/runtests
 # Executable Build Rules
 ######################################################################
 
-TARGET = $(BUILD_DIR)/hgrm
+TARGET = $(BUILD_DIR)/grm
 
 .PHONY: all
 all: $(TARGET) $(TEST_TARGET_PRG) data
@@ -81,7 +87,6 @@ $(TARGET): $(SRC_DIR)/main.cpp $(APP_OBJS)
 	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^ -largparse -lhts
 
 
-# Recall that -c flag prevents the compiler linking object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(OBJ_OUTPUT_OPTIONS) $<
 
@@ -98,6 +103,13 @@ $(TEST_TARGET_PRG): $(TEST_DIR)/main.cpp $(TEST_OBJS) $(APP_OBJS) | $(TARGET)
 
 $(BUILD_DIR)/test_%.o: $(TEST_DIR)/test_%.cpp
 	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(OBJ_OUTPUT_OPTIONS) $<
+
+TEST_GRM_PRG = $(BUILD_DIR)/test_grm
+test_grm: $(TEST_GRM_PRG)
+	./$(TEST_GRM_PRG)
+
+$(TEST_GRM_PRG): $(BUILD_DIR)/test_grm.o $(BUILD_DIR)/grm.o | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^ -lgtest -lgtest_main
 
 data: | $(TEST_DATA_DST)
 
@@ -144,10 +156,10 @@ check:
 
 .PHONY: help
 help:
-	-@echo "build hgrm"
+	-@echo "build grm"
 	-@echo "2025 Palmer Lab"
 	-@echo ""
-	-@echo "make hgrm executable"
+	-@echo "make grm executable"
 	-@echo "make libargparse"
 
 

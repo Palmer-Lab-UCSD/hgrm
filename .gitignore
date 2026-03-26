@@ -1,4 +1,5 @@
 build/
+tmp_*
 *.swp
 *.swo
 *~
@@ -6,3 +7,4 @@ build/
 *.vscode/
 scratch/
 data/
+tags
