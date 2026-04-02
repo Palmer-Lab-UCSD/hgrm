@@ -15,9 +15,6 @@
 #include <cstdint>
 #include <optional>
 #include <string>
-#include <array>
-
-#include <grm.h>
 
 namespace htslib {
 extern "C" {
