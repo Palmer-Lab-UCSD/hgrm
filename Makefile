@@ -1,18 +1,20 @@
+# Build and test the hwas program and / or components
 #
+# 
 # 2025 Palmer Lab
 #
-######################################################################
-# machine dependent options
-######################################################################
-# CXXFLAGS note: Remember that -g flag is for generating source-level 
-# debug info.
+#
+# NOTES:
+# 	CXXFLAGS: Remember that -g flag is for generating source-level 
+# 	debug info.
 
-# OBJ_OUTPUT_OPTIONS: compiler options.  Clang, and I presume 
-# also gcc, support the creation of dependency files (-MMD) and (-MP) phony
-# targets required for constructing an object file.  The (-o) and $@
-# are the standard output file designation submitted to the compiler,
-# and $@ is an automatic variable storing the rules target.
-# library archive program
+# 	OBJ_OUTPUT_OPTIONS: compiler options.  Clang, and I presume 
+# 	also gcc, support the creation of dependency files (-MMD) and
+# 	(-MP) phony
+# 	targets required for constructing an object file.  The (-o)
+# 	and $@ are the standard output file designation submitted to
+# 	the compiler, and $@ is an automatic variable storing the 
+# 	rules target.
 #
 
 ifneq ($(shell which clang++),)
@@ -25,142 +27,108 @@ else
 $(error "Couldn't establish either clang or gcc compiler availability")
 endif
 
-
 CXXFLAGS			+= -g -std=c++17 -Wall -Werror
+CXXFLAGS 			+= -I${PWD}/include \
+					   -I${HOME}/local/include \
+					   -I${HOME}/.local/include
 
 ifndef VIM
 CXXFLAGS += -fdiagnostics-color=always
 endif
 
-# Recall that -c flag prevents the compiler linking object files
-OBJ_OUTPUT_OPTIONS 	= -c -MMD -MP -o $@
-AR 					= ar
-AR_FLAGS 			= crs
+OUTPUT_OPTION 		= -MMD -MP
 
-LOCAL_LIB			= $(HOME)/.local/lib
-LOCAL_LD			= $(HOME)/.local/include
+AR 					= ar
+ARFLAGS 			= crs
+
+
 
 ######################################################################
 # define src and obj variables
 ######################################################################
 
-SRC_DIR = src
-HEADER_DIR = include
-BUILD_DIR = build
-
-CXXLD := $(PWD)/include $(LOCAL_LD) $(CXXLD)
-CXXLDFLAGS = $(addprefix -I, $(CXXLD))
-
-CXXLIB += $(LOCAL_LIB)
-CXXLIBFLAGS = $(addprefix -L, $(CXXLIB))
-
 # APPLICATION FILES
 # APP_FILES = matrix.cpp bcfio.cpp
-APP_SRC = $(filter-out $(SRC_DIR)/main.cpp, $(wildcard $(SRC_DIR)/*.cpp))
-#APP_SRC = $(addprefix $(SRC_DIR)/, $(APP_FILES))
-APP_OBJS = $(subst $(SRC_DIR), $(BUILD_DIR), $(APP_SRC:.cpp=.o))
-APP_DEPS = $(APP_OBJS:.o=.d)
+APP_SRC := $(filter-out src/main.cpp, $(wildcard src/*.cpp))
+APP_OBJS := $(subst src, build, $(APP_SRC:.cpp=.o))
+APP_DEPS := $(APP_OBJS:.o=.d)
 
 # TESTS
-TEST_DIR = tests
-TEST_SRC = $(wildcard $(TEST_DIR)/test_*.cpp)
-TEST_OBJS = $(subst $(TEST_DIR), $(BUILD_DIR), $(TEST_SRC:.cpp=.o))
-TEST_DEPS = $(TEST_OBJS:.o=.d)
+TEST_SRC := $(wildcard tests/test_*.cpp)
+TEST_OBJS := $(subst tests, build, $(TEST_SRC:.cpp=.o))
+TEST_DEPS := $(TEST_OBJS:.o=.d)
 
-
-TEST_DATA_SRC = $(wildcard $(TEST_DIR)/geno_test_data.*)
-TEST_DATA_DST = $(subst $(TEST_DIR), $(BUILD_DIR), $(TEST_DATA_SRC))
-
-TEST_TARGET_PRG = $(BUILD_DIR)/runtests
-
+TEST_DATA_SRC = $(wildcard tests/geno_test_data.*)
+TEST_DATA_SRC += $(wildcard tests/*.csv)
+TEST_DATA_DST = $(subst tests, build, $(TEST_DATA_SRC))
 
 ######################################################################
 # Executable Build Rules
 ######################################################################
 
-TARGET = $(BUILD_DIR)/grm
+TARGET = build/hwas
 
-.PHONY: all
-all: $(TARGET) $(TEST_TARGET_PRG) data
+$(TARGET): src/main.cpp $(APP_OBJS)
+	$(CXX) -o $@ $^ -largparse -lhts
 
-$(TARGET): $(SRC_DIR)/main.cpp $(APP_OBJS)
-	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^ -largparse -lhts
+build/%.o: src/%.cpp | build
 
-
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(OBJ_OUTPUT_OPTIONS) $<
-
-$(BUILD_DIR):
+build:
 	mkdir $@
 
-######################################################################
-# Test Build Rules
-######################################################################
-
-
-$(TEST_TARGET_PRG): $(TEST_DIR)/main.cpp $(TEST_OBJS) $(APP_OBJS) | $(TARGET)
-	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^ -lgtest -lhts
-
-$(BUILD_DIR)/test_%.o: $(TEST_DIR)/test_%.cpp
-	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(OBJ_OUTPUT_OPTIONS) $<
-
-TEST_GRM_PRG = $(BUILD_DIR)/test_grm
-test_grm: $(TEST_GRM_PRG)
-	./$(TEST_GRM_PRG)
-
-$(TEST_GRM_PRG): $(BUILD_DIR)/test_grm.o $(BUILD_DIR)/grm.o | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^ -lgtest -lgtest_main
-
-data: | $(TEST_DATA_DST)
-
-$(BUILD_DIR)/geno_test_data%: $(TEST_DIR)/geno_test_data%
-	rsync -avz $< $(BUILD_DIR)/
-
-# tests: $(BUILD_DIR)/test_log #$(BUILD_DIR)/test_argparse
-# 
-# $(BUILD_DIR)/test_log: $(BUILD_DIR)/test_log.o $(BUILD_DIR)/logger.o ~/.local/lib/libgtest.a
-# 	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) -o $@ $^
-# 
-# $(BUILD_DIR)/test_argparse: $(BUILD_DIR)/test_argparse.o \
-# 	$(BUILD_DIR)/argparse.o \
-# 	~/.local/lib/libgtest.a
-# 	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) -I$(LOCAL_INCLUDE) -L$(LOCAL_LIB) -o $@ $^
-
-# $(TEST_OBJS): $(TEST_SRC)
-#	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) -I$(LOCAL_INCLUDE) $(OBJ_OUTPUT_OPTIONS) $<
-#
-# $(BUILD_DIR)/test_log.o: $(TEST_DIR)/test_log.cpp
-# 	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(OBJ_OUTPUT_OPTIONS) $^
-
-
-# $(TEST_OBJS): $(TEST_SRC)
-#	$(CXX) $(CXXFLAGS) $(CXXLDFLAGS) -I$(LOCAL_INCLUDE) -L$(LOCAL_LIB) -o $@ $^
-
-# $(CXX) $(CXXFLAGS) $(CXXLDFLAGS) $(CXXLIBFLAGS) $(OBJ_OUTPUT_OPTIONS) $^
-
 
 ######################################################################
-# 
+## Module builds and testing
 ######################################################################
 
-check:
-	./$(TEST_TARGET_PRG)
+.PHONY: bcfio grm
+
+bcfio: build/bcfio.o build/test_bcfio.o
+	./build/test_bcfio.o
+
+build/test_bcfio.o: tests/test_bcfio.cpp build/bcfio.o | build
+	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION}\
+		-L${HOME}/local/lib -o $@ $^ \
+		-lgtest -lgtest_main -lhts \
+		&& chmod 740 $@
+
+build/bcfio.o: src/bcfio.cpp | build
+	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION} -c -o $@ $<
+
+
+grm: build/test_grm.o
+	./build/test_grm.o
+
+build/test_grm.o: tests/test_grm.cpp \
+	build/grm.o build/grm_ehc.o build/logger.o build/bcfio.o | build
+	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION}\
+		-L${HOME}/local/lib -o $@ $^ \
+		-lgtest -lgtest_main -lhts \
+		&& chmod 740 $@
+
+build/grm.o: src/grm.cpp | build
+	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION} -c -o $@ $<
+
+build/grm_ehc.o: src/grm_ehc.cpp | build
+	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION} -c -o $@ $<
+
+build/logger.o: src/logger.cpp | build
+	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION} -c -o $@ $<
 
 ######################################################################
-# 
+# Utils
 ######################################################################
 
+-include ${APP_DEPS} ${TEST_DEPS}
 
--include $(APP_DEPS)
--include $(TEST_DEPS)
+clean: 
+	rm -r build/
+
 
 .PHONY: help
 help:
-	-@echo "build grm"
+	-@echo "build hwas"
 	-@echo "2025 Palmer Lab"
-	-@echo ""
-	-@echo "make grm executable"
-	-@echo "make libargparse"
 
 
 ######################################################################

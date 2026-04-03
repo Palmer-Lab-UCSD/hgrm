@@ -3,7 +3,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <gtest/gtest.h>
-#include <grm.h>
+
+#include <grm.hpp>
 
 
 ////////////////////////////////////////////////////////////////////

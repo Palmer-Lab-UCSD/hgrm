@@ -13,14 +13,15 @@ extern "C" {
 }
 }
 
-#include <bcfio.h>
+#include <bcfio.hpp>
 
 
-char VCF_NAME[] { "build/geno_test_data.vcf" };
-char VCFGZ_NAME[] { "build/geno_test_data.vcf.gz" };
-char BCF_NAME[] { "build/geno_test_data.bcf" };
-uint8_t K_FOUNDERS = 8;
-uint8_t N_SAMPS = 11;
+const char DATA_DIR[] { "data" };
+const char VCF_NAME[] { "data/geno_test_data.vcf" };
+const char VCFGZ_NAME[] { "data/geno_test_data.vcf.gz" };
+const char BCF_NAME[] { "data/geno_test_data.bcf" };
+const uint8_t K_FOUNDERS = 8;
+const uint8_t N_SAMPS = 11;
 
 
 
@@ -477,7 +478,7 @@ TEST(TestReadBcf, HDRecordValue) {
         
         snprintf(buff_fname.array, 
                 buff_fname.size, 
-                "tests/hd_%02zu.csv", pos++);
+                "%s/hd_%02zu.csv", DATA_DIR, pos++);
 
         fid = fopen(buff_fname.array, "r");
 

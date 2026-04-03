@@ -1,25 +1,32 @@
+/* -*- C++ -*- */
 // Palmer Lab at UCSD
 //
-// This library provides the data structure of a genetic relationship matrix
-// and functions for file I/O.
+// This library provides the data structure of a genetic relationship
+// matrix and functions for file I/O.
 // 
 // GRM BINARY FILE SPECIFICATION
 //
-// A computed GRM is stored in a custom binary format.  The extension ".grm"
-// of these files is mandatory.  The file is divided into two components, a
-// header with meta-data necessary to reproduce the grm calculation and the
-// the computed grm values, named the payload.  
+// A computed GRM is stored in a custom binary format.  The extension
+// ".grm" of these files is mandatory.  The file is divided into two 
+// components, a header with meta-data necessary to reproduce the grm
+// calculation and the the computed grm values, named the payload.  
 //
-// The .grm file header is defined by the struct Hdr, and contains, at a
-// minimum, the following information:
+// The .grm file header is defined by the struct Hdr, and contains,
+// at a minimum, the following information:
+//
 //      * program_version: grm program version number
-//      * data_type: alt_count, expected_alt_count, expected_haplotype_count, 
-//          both expected_alt_count and expected_haplotype_count.
+//      * data_type: alt_count, 
+//          expected_alt_count, 
+//          expected_haplotype_count, 
+//          both expected_alt_count and 
+//          expected_haplotype_count.
 //      * coords: Genomic coordinates used in the grm calculation.
 //      * samples: list of sample id's in order of the grm
-// the coords and samples are defined by their own structs with field pointers
-// to heap allocated memory addresses.  Reading and writing such heap allocated
-// structs make use of runtime polymorphism of function "read" and "write"
+//
+// the coords and samples are defined by their own structs with field
+// pointers to heap allocated memory addresses.  Reading and writing 
+// such heap allocated structs make use of runtime polymorphism of
+// function "read" and "write"
 //
 //
 // ACKNOWLEDGMENT
@@ -41,21 +48,25 @@
 #include <utility>
 #include <string>
 
-#include "io.h"
-#include "constants.h"
-#include "utils.h"
+#include <bcfio.hpp>
+#include <logger.hpp>
+#include <io.hpp>
+#include <constants.hpp>
+#include <utils.hpp>
 
 
 
-// The algorithm for getting the array idx from matrix indexes is simply
+// The algorithm for getting the array idx from matrix indexes is
+// simply
 //
 // idx = i * n_samples - n_skipped_idxs + j
 //
-// where i is the matrix row index and j is the matrix column index. The
-// interesting term is n_skipped_idxs, this is the number of elements
-// that referencing (i, j) skip when only storing upper triangle. For
-// example, suppose that i = 3 and j = 2.  Here three complete rows of
-// the matrix has been traversed, therefore the number skipped is
+// where i is the matrix row index and j is the matrix column index.
+// The interesting term is n_skipped_idxs, this is the number of 
+// elements that referencing (i, j) skip when only storing upper
+// triangle. For example, suppose that i = 3 and j = 2.  Here three
+// complete rows of the matrix has been traversed, therefore the number 
+// skipped is
 //
 // n_skipped_idx >= (i-1) * i / 2
 //
@@ -108,6 +119,8 @@ enum STATUS {
     ERROR_NULLPTR_ARG,
     ERROR_INVALID_ARG,
     ERROR_NOT_A_GRM_FILE,
+    ERROR_BCF_ATTR,
+    ERROR_BCF_IDX
 };
 
 
@@ -143,7 +156,7 @@ struct Coordinates {
 // Coordinates Storage Layout
 //
 //  type    number  description
-//  --------------------------------------------------------------------
+//  -----------------------------------------------------------------
 //  size_t  1       number of characters (n) in contig name
 //  char    n       characters for contig name without null character
 //  size_t  1       number of genomic positions (npos) 
@@ -159,7 +172,8 @@ struct Samples {
     Samples(): len(0), names(nullptr) {};
     Samples(uint64_t n_samples): 
         len(n_samples), 
-        names(len == 0 ? nullptr : std::make_unique<std::string[]>(len)) {};
+        names(len == 0 ? nullptr : std::make_unique<std::string[]>(len)) 
+        {};
 
     Samples(const Samples&) = delete;
     Samples& operator=(const Samples&) = delete;
@@ -277,6 +291,13 @@ struct Grm {
 STATUS write(io::FileIO* fio, const Hdr *hdr, const Grm *grmatrix);
 STATUS read(io::FileIO* fio, Hdr* hdr, Grm* grmatrix);
 
+
+//
+STATUS calc_grm_ehc(Logger *log, bcfio::ReadBcf *bfid, Grm *cov);
+
+//int compute_eac_and_ehc_matrix();
+// int compute_genotype_matrix();
+// int compute_eac_matrix();
 
 }
 

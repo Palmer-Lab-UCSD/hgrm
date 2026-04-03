@@ -1,55 +1,85 @@
+// Palmer Lab at UCSD 2026
+//
+#include <grm.hpp>
+
+struct MatIdx {
+    size_t row;
+    size_t col;
+};
 
 
-#include <calc.h>
+static grm::STATUS update(grm::Grm* grmatrix,
+        bcfio::BcfFloatRecord* rec) {
 
-int compute_ehc_matrix(Logger *log, bcfio::ReadBcf *bfid, Grm *cov) {
+    // instantiate indexing variables used in for loops
+    // use static to prevent construction and destruction of variables
+    // between function calls
+    static uint64_t grow = 0;
+    static uint64_t gcol = 0;
+    static uint64_t k_hap = 0;
+    static std::optional<float> val_i = std::nullopt;
+    static std::optional<float> val_j = std::nullopt;
+    static float val = 0;
+    static uint64_t n_samples = grmatrix->n_samples;
+    static uint64_t k_haps = rec->ncols();
 
-    int output_status = 0;
+    // only iterate over upper triangle
+    // remember that record data is an n_sample by k haplotype matrix 
+    for (grow = 0; grow < n_samples; grow++) {
+        for (gcol = grow; gcol < n_samples; gcol++) {
+
+            val = 0;
+
+            for (k_hap = 0; k_hap < k_haps; k_hap++) {
+
+                if ((val_i = rec->get(grow, k_hap)) == std::nullopt)
+                    return grm::ERROR_BCF_IDX;
+
+                if ((val_j = rec->get(gcol, k_hap)) == std::nullopt)
+                    return grm::ERROR_BCF_IDX;
+
+                val += val_i.value() * val_j.value();
+            } 
+
+            (*grmatrix)(grow, gcol) += val;
+        }
+    }
+
+    return grm::SUCCESS;
+}
+
+
+
+grm::STATUS grm::calc_grm_ehc(Logger *log, 
+        bcfio::ReadBcf *bfid, 
+        Grm *grmatrix) {
+
+    grm::STATUS status = grm::FAILED;
 
     // instantiate matrices to hold calculations
-    const size_t n_samples { bfid->n_samples() };
     int32_t k { 0 };
     if ((k = bfid->k_fmt("HD")) < 0) {
         log->error("%s\n", "Wrong format id tag");
-        exit(EXIT_FAILURE);
+        return grm::ERROR_BCF_ATTR;
     }
-    const size_t k_haps { static_cast<size_t>(k) };
-    
-    size_t idx_row { 0 };
-    // size_t idx_col { 0 };
-    size_t idx_hap { 0 };
-    size_t idx_rec { 0 };
-
     bcfio::BcfFloatRecord rec {};
 
-    std::optional<float> val { 0 };
-
+    size_t rec_count = 0;
     while (bfid->next_record(&rec, "HD") == 0) {
 
-        for (idx_row = 0; idx_row < n_samples; idx_row++) {
-
-            for (idx_hap = 0; idx_hap < k_haps; idx_hap++) {
-
-                if ((val = rec.get(idx_row, idx_hap)) == std::nullopt) {
-                    printf("IDX: (%zu, %zu) = null\n", idx_row, idx_hap);
-                    return -1;
-                }
-
-                (*cov)(idx_row, idx_row) += val.value();
-
-                printf("%f\t ", val.value());
-            }
-
-            printf("\n");
+        if ((status = update(grmatrix, &rec)) != grm::SUCCESS) {
+            log->error("Index error for bcf record");
+            return status;
         }
 
-        log->info("Processed %s records",
-                std::to_string(++idx_rec).c_str());
+        if (rec_count % 1000 == 0)
+            log->info("Processed %zu records", rec_count);
 
-
+        rec_count++;
     }
 
-    return output_status;
+    // TODO: how to verify that all positions have been read?
+    return grm::SUCCESS;
 }
 
 //    size_t m_markers { 1 };

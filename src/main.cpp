@@ -1,19 +1,25 @@
-// Compute the genomic relationship matrix using haplotypes
+// Haplotype wide association analyses
 //
 // Palmer Lab at UCSD
 //
-// This program performs a single-pass computation of the genetic relationship
-// matrix (GRM, GR matrix).  GR matrices may be constructed using alt allele
-// counts, expected alt allele counts, expected haplotype counts, or a
-// combination of both expected alt allele and haplotype counts.  
+// This program provides tools to associate ancestor haplotype at
+// any locus to the phenotype of interests.  We assume that the
+// expected ancestor haplotype count is provided in the vcf, vcf.gz,
+// or bcf file formats.  The analyses conducted are:
+//
+// * computation of the haplotype genetic relationship matrix
+// * estimation of the genetic and environment variances 
+// * estimation of haplotype heritability
+// * computation of log odds (lod) score at each locus
+// * computation of the ancestor Best Linear Unbiased Estimator
+//  (BLUPs) with phenotype at each locus.
 //
 #include <argparse.h>
 #include <optional>
 #include <string>
 
-#include <logger.h>
-#include <calc.h>
-#include <grm.h>
+#include <logger.hpp>
+#include <grm.hpp>
 
 
 #define FAILED_CALC -1
@@ -32,58 +38,73 @@ int main(int argc, char* argv[])
     // }
 
     argparse::ArgParser parser {
-        "grm: Genetic Relationship Matrix",
-        "This program provides tools for computing the genetic relationship"
-        " matrix (GRM) and the leave-one-chromosome-out (LOCO) matrices for"
-        " linear mixed effect based association studies.  The GRM may be"
-        " computed using called genotypes, expected alternative allele counts,"
-        " expected haplotype counts, or both expected alternative allele"
-        " and haplotype counts.  By default the expected alternative allele"
-        " counts are used."
+        "hwas: Haplotype-wide association analyses",
+        " This program provides tools for computing statistical"
+        " associations between ancestor founder haplotype at any"
+        " locus i with a quantitative phenotype under a linear"
+        " mixed effects model (LMM)."
     };
 
-    argparse::CmdDef *contig_cmd = parser.add_cmd("contig");
+    argparse::CmdDef *grm_cmd = parser.add_cmd("grm");
 
-    contig_cmd->add_arg("-o", 
+    grm_cmd->add_arg("-o", 
             argparse::ArgType::STRING,
-            "the path and filename that the resulting haplotype genetic"
-            " relationship matrix is printed.");
+            "the path and filename that the resulting haplotype"
+            " genetic relationship matrix is stored.");
 
-    contig_cmd->add_arg("--sample_names",
+    grm_cmd->add_arg("--samples",
             argparse::ArgType::STRING,
-            "The path and name of the file containing sample names to be"
-            " included in computing the relationship matrix.  The file must"
-            " include a single sample filename, and if necessary file system"
-            " path, per line.");
+            "The path and name of the file containing sample names"
+            " to be included in computing the relationship matrix."
+            " The file must include a single sample filename, and if"
+            " necessary file system path, per line.");
 
-    contig_cmd->add_arg("--gt",
+    grm_cmd->add_arg("--eac",
             argparse::ArgType::BOOLEAN,
-            "Use sample genotypes to compute the relationship matrix");
+            "Use sample expected alternative allele counts to compute"
+            " the relationship matrix.");
 
-    contig_cmd->add_arg("--ehc",
+    grm_cmd->add_arg("--ehc",
             argparse::ArgType::BOOLEAN,
-            "Use sample expected haplotype count to compute the the genetic"
-            " relationship matrix.");
+            "Use sample expected haplotype count to compute the the"
+            " genetic relationship matrix.");
 
-    contig_cmd->add_arg("-b",
+    grm_cmd->add_arg("-b",
             argparse::ArgType::BOOLEAN,
-            "Use both the expected alternative allele and haplotype counts to"
-            " compute the genetic relationship matrix");
+            "Use both the expected alternative allele and haplotype"
+            " counts to compute the genetic relationship matrix");
 
-    contig_cmd->add_arg("bcf",
+    grm_cmd->add_arg("bcf",
             argparse::ArgType::STRING, 
-            "The path and filename of the genetic data to compute the GRM. The"
-            " data may be in any of the htslib supported formats, i.e. vcf,"
-            " vcf.gz, or bcf.");
+            "The path and filename of the genetic data to compute the"
+            " GRM. The data may be in any of the htslib supported"
+            " formats, i.e. vcf, vcf.gz, or bcf.");
 
 
     argparse::CmdDef *loco_cmd = parser.add_cmd("loco");
     loco_cmd->add_arg("filename",
             argparse::ArgType::STRING,
-            "Name, and path, of file that stores the name and paths of matrix"
-            " files used to compute leave-one-chromosome-out (LOCO) relationship"
-            " matrix.");
+            "Name, and path, of file that stores the name and paths of"
+            " matrix files used to compute leave-one-chromosome-out"
+            " (LOCO) relationship matrix.");
 
+    argparse::CmdDef *lmm_cmd = parser.add_cmd("lmm");
+    lmm_cmd->add_arg("bcf",
+            argparse::ArgType::STRING,
+            "Name, and path, of vcf, vcf.gz, or bcf file with the"
+            " genotype data.");
+    lmm_cmd->add_arg("--samples",
+            argparse::ArgType::STRING,
+            "Name, and path, to the file with sample id's.  This"
+            " is used to select data from that stored in the vcf,"
+            " vcf.gz, or bcf file.");
+
+
+    argparse::CmdDef *eqtl_cmd = parser.add_cmd("eqtl");
+    eqtl_cmd->add_arg("bcf",
+            argparse::ArgType::STRING,
+            "Name, and path, of vcf, vcf.gz, or bcf file with the"
+            " genotype data.");
 
 
     Logger log {};
@@ -102,7 +123,7 @@ int main(int argc, char* argv[])
     // PARSE ARGS FOR RESPECTIVE SUBPROGRAMS AND RUN
     //
     // Compute the GRM for the specified contig
-    if (parser.is_sub_cmd("contig")) {
+    if (parser.is_sub_cmd("grm")) {
 
         std::optional<std::string> tmp_str {};
         if((tmp_str = parser.get<std::string>("bcf")) == std::nullopt) {
@@ -207,11 +228,10 @@ int main(int argc, char* argv[])
         // matricies.
         //
         printf("loco selected\n");
-    } else if (parser.is_sub_cmd("assoc")) {
+    } else if (parser.is_sub_cmd("lmm")) {
         printf("association statistics selected\n");
-    }
-
-
+    } else if (parser.is_sub_cmd("eqtl")
+        printf("eqtl statistics selected\n");
 
 
     return status;

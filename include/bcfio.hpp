@@ -8,12 +8,13 @@
 // Acknowledgment
 //
 //
-#ifndef HEADER_PARSE_HTS_H
-#define HEADER_PARSE_HTS_H
+#ifndef HEADER_BCFIO_H
+#define HEADER_BCFIO_H
 
 #include <cstdlib>
 #include <cstdint>
 #include <optional>
+#include <memory>
 #include <string>
 
 namespace htslib {
@@ -84,6 +85,7 @@ public:
     int get_filter_attr(const char *id, BcfHdrAttr *ptr) const;
 
     int subset_samples(const char *filename);
+
     // @title: The number of values stored in format id
     // @description: Each bcf format field is able to hold unique
     //  number of values per sample.  This function provides a simple
@@ -135,17 +137,6 @@ public:
     // provide index checked access to data.
     std::optional<float> get(const size_t row_idx, const size_t col_idx) const;
 
-    // @title: Load sample data at the current locus
-    // @description: Sample data at the current locus, is not made
-    //  available by reading a locus's record and storing in the
-    //  bcf1_t type. Instead, we need to supply a pointer variable
-    //  and format id to make that id's smaple data available. This 
-    //  function help simplify this process.
-    // @param hdr: instance of the bcf header to retreive meta data
-    // @param tag: the C-string id representing the data we want to 
-    //  query.
-    // @return 0 upon success and != 0 for failure
-    int load_data(BcfHeader *hdr, const char *tag);
 
     // the total amount of values per record, n_samples * k_founders
     uint64_t size() const { return static_cast<uint64_t>(ndst_); };
@@ -157,6 +148,8 @@ public:
     bool is_snp() const { return htslib::bcf_is_snp(rec_); }
 
 private:
+    friend class ReadBcf;
+
     htslib::bcf1_t *rec_;
 
     // These attributes store htslib access points to record data
@@ -171,6 +164,19 @@ private:
     // columns being k_fmt and rows being n_samples.
     uint64_t col_num_ = 0;
     uint64_t row_num_ = 0;
+
+
+    // @title: Load sample data at the current locus
+    // @description: Sample data at the current locus, is not made
+    //  available by reading a locus's record and storing in the
+    //  bcf1_t type. Instead, we need to supply a pointer variable
+    //  and format id to make that id's sample data available. This 
+    //  function helps simplify this process.
+    // @param hdr: instance of the bcf header to retreive meta data
+    // @param tag: the C-string id representing the data we want to 
+    //  query.
+    // @return 0 upon success and != 0 for failure
+    int load_data_(BcfHeader *hdr, const char *tag);
 };
 
 

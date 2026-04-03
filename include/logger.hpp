@@ -1,4 +1,3 @@
-
 #ifndef HEADER_LOGGER_H
 #define HEADER_LOGGER_H
 

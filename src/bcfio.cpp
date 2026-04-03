@@ -9,7 +9,7 @@
 //
 //
 
-#include <bcfio.h>
+#include <bcfio.hpp>
 
 
 ///////////////////////////////////////////////////////////////////
@@ -97,7 +97,7 @@ std::optional<float> bcfio::BcfFloatRecord::get(const size_t row_idx,
     return *(dst_ + idx);
 }
 
-int bcfio::BcfFloatRecord::load_data(bcfio::BcfHeader *hdr, const char *id) {
+int bcfio::BcfFloatRecord::load_data_(bcfio::BcfHeader *hdr, const char *id) {
     int status { 0 };
     col_num_ = row_num_ = 0;
 
@@ -168,7 +168,7 @@ int bcfio::ReadBcf::next_record(bcfio::BcfFloatRecord *ptr, const char *id) {
     if (htslib::bcf_unpack(ptr->cur_rec(), BCF_UN_ALL) < 0)
         return -1;
 
-    return ptr->load_data(&hdr_, id);
+    return ptr->load_data_(&hdr_, id);
 }
 
 bcfio::ReadBcf bcfio::open(const char* filename, const char* mode) {
