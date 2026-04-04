@@ -1,0 +1,11 @@
+##fileformat=VCFv4.0
+##INFO=<ID=HWE,Number=.,Type=Float,Description="Hardy-Weinberg p-value">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Best Guessed Genotype with posterior probability threshold of 0.9">
+##FORMAT=<ID=HD,Number=3,Type=Float,Description="Ancestral haplotype dosages for one through K haplotypes">
+##contig=<ID=chr12>
+##note=ficticious data used for testing code
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	S01	S02	S03
+chr12	788	.	A	G	.	PASS	HWE=1	GT:HD	0/0:1.00,0.500,0.500	0/0:0,0,2	0/0:2,0,0
+chr12	1321	.	A	C	.	PASS	HWE=1	GT:HD	0/0:0.00,0,2.000	./.:1.00,0,1.00	./.:1,1,0
+chr12	1335	.	G	A	.	PASS	HWE=1	GT:HD	./.:1.00,0,1.0	./.:0.00,0,2	./.:0.5,0.500,1.00
+chr12	13305	.	G	A	.	PASS	HWE=1	GT:HD	./.:1.00,0,1.0	./.:0.00,0,2	./.:0.5,0.500,1.00

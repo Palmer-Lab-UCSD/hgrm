@@ -15,7 +15,6 @@ extern "C" {
 
 #include <bcfio.hpp>
 
-
 const char DATA_DIR[] { "data" };
 const char VCF_NAME[] { "data/geno_test_data.vcf" };
 const char VCFGZ_NAME[] { "data/geno_test_data.vcf.gz" };

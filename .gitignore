@@ -6,5 +6,4 @@ tmp_*
 *.DS_Store
 *.vscode/
 scratch/
-data/
 tags

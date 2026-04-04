@@ -32,11 +32,15 @@ static grm::STATUS update(grm::Grm* grmatrix,
 
             for (k_hap = 0; k_hap < k_haps; k_hap++) {
 
-                if ((val_i = rec->get(grow, k_hap)) == std::nullopt)
+                if ((val_i = rec->get(grow, k_hap)) == std::nullopt) {
+                    printf("ERROR: grow, k_hap: %lu, %lu\n", grow, k_hap);
                     return grm::ERROR_BCF_IDX;
+                }
 
-                if ((val_j = rec->get(gcol, k_hap)) == std::nullopt)
+                if ((val_j = rec->get(gcol, k_hap)) == std::nullopt) {
+                    printf("ERROR: gcol, k_hap: %lu, %lu\n", gcol, k_hap);
                     return grm::ERROR_BCF_IDX;
+                }
 
                 val += val_i.value() * val_j.value();
             } 
@@ -47,7 +51,6 @@ static grm::STATUS update(grm::Grm* grmatrix,
 
     return grm::SUCCESS;
 }
-
 
 
 grm::STATUS grm::calc_grm_ehc(Logger *log, 
@@ -72,10 +75,9 @@ grm::STATUS grm::calc_grm_ehc(Logger *log,
             return status;
         }
 
+        rec_count++;
         if (rec_count % 1000 == 0)
             log->info("Processed %zu records", rec_count);
-
-        rec_count++;
     }
 
     // TODO: how to verify that all positions have been read?

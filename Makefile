@@ -81,19 +81,19 @@ build:
 ## Module builds and testing
 ######################################################################
 
-.PHONY: bcfio grm
+.PHONY: bcfio grm calc_ehc
 
 bcfio: build/bcfio.o build/test_bcfio.o
 	./build/test_bcfio.o
 
 build/test_bcfio.o: tests/test_bcfio.cpp build/bcfio.o | build
-	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION}\
+	${CXX} ${CXXFLAGS} ${LDFLAGS} \
 		-L${HOME}/local/lib -o $@ $^ \
 		-lgtest -lgtest_main -lhts \
 		&& chmod 740 $@
 
 build/bcfio.o: src/bcfio.cpp | build
-	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION} -c -o $@ $<
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -c -o $@ $<
 
 
 grm: build/test_grm.o
@@ -101,20 +101,30 @@ grm: build/test_grm.o
 
 build/test_grm.o: tests/test_grm.cpp \
 	build/grm.o build/grm_ehc.o build/logger.o build/bcfio.o | build
-	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION}\
+	${CXX} ${CXXFLAGS} ${LDFLAGS} \
 		-L${HOME}/local/lib -o $@ $^ \
 		-lgtest -lgtest_main -lhts \
 		&& chmod 740 $@
 
 build/grm.o: src/grm.cpp | build
-	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION} -c -o $@ $<
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -c -o $@ $<
 
 build/grm_ehc.o: src/grm_ehc.cpp | build
-	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION} -c -o $@ $<
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -c -o $@ $<
 
 build/logger.o: src/logger.cpp | build
-	${CXX} ${CXXFLAGS} ${LDFLAGS} ${OUTPUT_OPTION} -c -o $@ $<
+	${CXX} ${CXXFLAGS} ${LDFLAGS} -c -o $@ $<
 
+
+calc_ehc: build/test_grm_ehc.o
+	./build/test_grm_ehc.o
+
+build/test_grm_ehc.o: tests/test_grm_ehc.cpp \
+	build/grm.o build/grm_ehc.o build/logger.o build/bcfio.o | build
+	${CXX} ${CXXFLAGS} ${LDFLAGS} \
+		-L${HOME}/local/lib -o $@ $^ \
+		-lgtest -lgtest_main -lhts \
+		&& chmod 740 $@
 ######################################################################
 # Utils
 ######################################################################
